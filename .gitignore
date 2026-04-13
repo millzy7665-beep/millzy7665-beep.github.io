@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-offline/
+
+# Checkpoints and archives
+.checkpoints/
+
+# Local certs/secrets
+certs/
+android/keystore.properties
+android/*.jks
+android/*.keystore
+
+# Android/iOS build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+ios/App/build/
+
+# Local environment files
+android/local.properties
+
+# macOS
+.DS_Store
