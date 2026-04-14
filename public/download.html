@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIMRA Handbook</title>
+  <link rel="icon" type="image/png" href="/icons/icon-192.png?v=2" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png?v=2" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#06080F" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="CIMRA Handbook" />
+  <style>
+    body { font-family: Arial, sans-serif; background: linear-gradient(180deg, #111111, #171411); color:#F5F1E8; margin:0; padding:24px; }
+    .card { max-width:720px; margin:20px auto; background:#1C1C1C; border:1px solid #2B2926; border-radius:20px; padding:24px; box-shadow: 0 20px 50px rgba(0,0,0,0.28); }
+    .hero { display:flex; align-items:center; gap:16px; margin-bottom:18px; }
+    .hero img.logo { width:72px; height:72px; object-fit:contain; border-radius:14px; background:#fff; padding:6px; }
+    .hero img.icon { width:44px; height:44px; object-fit:contain; border-radius:12px; background:#2B2926; padding:6px; }
+    h1 { margin:0; font-size:28px; }
+    .sub { color:#B9AE9C; margin:6px 0 0; line-height:1.6; }
+    .btn { display:block; margin-top:12px; padding:14px 18px; border-radius:12px; background:#B08A49; color:#111111; font-weight:700; text-decoration:none; text-align:center; }
+    .btn.secondary { background:#2B2926; color:#F5F1E8; border:1px solid #3B3732; }
+    .muted { color:#B9AE9C; line-height:1.6; }
+    .panel { background:#141414; border:1px solid #2B2926; border-radius:14px; padding:16px; margin-top:18px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="hero">
+      <img class="logo" src="/cimra-logo.jpg" alt="CIMRA logo" />
+      <div>
+        <h1>CIMRA Handbook</h1>
+        <p class="sub">Motorcycle rider handbook by Cayman Custom Cycles × CIMRA</p>
+      </div>
+      <img class="icon" src="/icons/icon-192.png" alt="App icon" />
+    </div>
+
+    <div class="panel">
+      <p><strong>Version:</strong> 1.0.1</p>
+      <p class="muted">This install now opens the fully self-contained offline app. Once added to your home screen, it can open without a network connection.</p>
+      <a class="btn" href="/offline.html" id="installBtn">Install CIMRA App</a>
+      <a class="btn secondary" href="/offline.html">Open Offline App Now</a>
+      <a class="btn secondary" href="/downloads/CIMRA-Handbook-Offline.zip">Download Offline Pack (ZIP)</a>
+    </div>
+
+    <p class="muted" id="installHelp">If the install prompt does not appear, open the browser menu and choose <strong>Add to Home Screen</strong> or <strong>Install App</strong>.</p>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+    });
+
+    installBtn.addEventListener('click', async (event) => {
+      if (!deferredPrompt) return;
+      event.preventDefault();
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+    });
+  </script>
+</body>
+</html>

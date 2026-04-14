@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import os from 'os'
 
+const useHttps = process.env.VITE_HTTPS === 'true'
+
 function getLocalIP() {
   const nets = os.networkInterfaces()
   for (const name of Object.keys(nets)) {
@@ -14,12 +16,20 @@ function getLocalIP() {
 }
 
 export default defineConfig({
-  plugins: [react(), basicSsl()],
+  plugins: [react(), ...(useHttps ? [basicSsl()] : [])],
   server: {
     host: true,
     port: 5173,
     strictPort: true,
-    https: true,
+    https: useHttps,
+    allowedHosts: true,
+  },
+  preview: {
+    host: true,
+    port: 4173,
+    strictPort: true,
+    https: useHttps,
+    allowedHosts: true,
   },
   define: {
     __LOCAL_IP__: JSON.stringify(getLocalIP()),

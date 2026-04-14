@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:offline": "vite build --config vite.offline.js && cp dist-offline/index.html public/offline.html",
+    "build:offline": "vite build --config vite.offline.js && mkdir -p public/downloads && cp dist-offline/index.html public/offline.html && cp dist-offline/index.html public/downloads/CIMRA-Handbook-Offline.html && cd public/downloads && zip -q -r CIMRA-Handbook-Offline.zip CIMRA-Handbook-Offline.html",
     "native:sync": "npm run build && npx cap sync",
     "native:android": "npm run native:sync && npx cap open android",
     "native:ios": "npm run native:sync && npx cap open ios",

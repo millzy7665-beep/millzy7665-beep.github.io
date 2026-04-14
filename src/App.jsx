@@ -15,23 +15,25 @@ const SECURE_SHARE_URL = typeof __SECURE_SHARE_URL__ !== "undefined" ? __SECURE_
 
 // ─── PALETTE ──────────────────────────────────────────────────────────
 const C = {
-  bg:       "#06080F",
-  surface:  "#0B1220",
-  card:     "#0F1929",
-  border:   "#192840",
-  border2:  "#243355",
-  text:     "#EFF3FF",
-  muted:    "#7A91BB",
-  dim:      "#3A4F70",
-  gold:     "#C9A84C",
-  goldL:    "#E8C456",
-  sky:      "#38BDF8",
-  violet:   "#A78BFA",
-  emerald:  "#34D399",
-  amber:    "#FBBF24",
-  rose:     "#FB7185",
-  red:      "#F87171",
+  bg:       "#0F0E0C",
+  surface:  "#161412",
+  card:     "#1D1A17",
+  border:   "#302A24",
+  border2:  "#443C34",
+  text:     "#F3EEE6",
+  muted:    "#B8AC99",
+  dim:      "#7B7063",
+  gold:     "#AF8B52",
+  goldL:    "#D1B17A",
+  sky:      "#908578",
+  violet:   "#756B61",
+  emerald:  "#75806F",
+  amber:    "#9E7A49",
+  rose:     "#89685E",
+  red:      "#916558",
 };
+
+const TITLE_FONT = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif';
 
 // ─── PHOTOS ───────────────────────────────────────────────────────────
 const _P = (id, w, h) =>
@@ -51,28 +53,39 @@ const PHOTOS = {
   resources:        _P("1558981033-0f0309284409", 400, 200),
 };
 
-function getShareUrl() {
+function getShareUrl(path = "") {
   if (typeof window === "undefined") return "";
 
+  let baseUrl = "";
+
   // A secure URL is required for reliable mobile app installation.
-  if (SECURE_SHARE_URL && SECURE_SHARE_URL.startsWith("https://")) return SECURE_SHARE_URL;
+  if (SECURE_SHARE_URL && SECURE_SHARE_URL.startsWith("https://")) {
+    baseUrl = SECURE_SHARE_URL;
+  } else {
+    const origin = window.location.origin;
+    const originIsSecure = window.location.protocol === "https:";
 
-  const origin = window.location.origin;
-  const originIsSecure = window.location.protocol === "https:";
-  if (originIsSecure) return origin;
+    if (originIsSecure) {
+      baseUrl = origin;
+    } else {
+      const port = window.location.port || "5173";
+      const host = window.location.hostname;
+      const isLocalHost = host === "localhost" || host === "127.0.0.1";
+      const networkHost = NETWORK_IP || (!isLocalHost ? host : "");
+      if (!networkHost) return "";
+      baseUrl = `http://${networkHost}:${port}`;
+    }
+  }
 
-  const port = window.location.port || "5173";
-  const host = window.location.hostname;
-  const isLocalHost = host === "localhost" || host === "127.0.0.1";
-  const networkHost = NETWORK_IP || (!isLocalHost ? host : "");
-  if (!networkHost) return "";
-  return `http://${networkHost}:${port}`;
+  if (!path) return baseUrl;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl.replace(/\/$/, "")}${normalizedPath}`;
 }
 
 // ─── DATA ─────────────────────────────────────────────────────────────
 const CHAPTERS = [
   {
-    id: "welcome", title: "Welcome", icon: "BookOpen", color: "#38BDF8",
+    id: "welcome", title: "Welcome", icon: "BookOpen", color: "#7F8C95",
     sections: [
       { title: "Cayman Custom Cycles Motorcycle Handbook",
         content: `Welcome to your interactive Motorcycle Rider's Handbook, brought to you by **Cayman Custom Cycles** in partnership with the Cayman Islands Motorcycle Riders Association (CIMRA).
@@ -93,7 +106,7 @@ Find CIMRA at: facebook.com/CIMRA` },
     ],
   },
   {
-    id: "licensing", title: "Licensing & Registration", icon: "FileText", color: "#A78BFA",
+    id: "licensing", title: "Licensing & Registration", icon: "FileText", color: "#8D806E",
     sections: [
       { title: "Definitions",
         content: `**Motor Vehicle:** Any self-propelled vehicle intended for operation upon public right of way, excluding vehicles moved solely by human power, motorized wheelchairs, and motorized bicycles.
@@ -130,7 +143,7 @@ Find CIMRA at: facebook.com/CIMRA` },
     ],
   },
   {
-    id: "rules", title: "Rules of the Road", icon: "Shield", color: "#FB7185",
+    id: "rules", title: "Rules of the Road", icon: "Shield", color: "#83554E",
     sections: [
       { title: "General Road Code",
         content: `In the Cayman Islands, any person operating a motorcycle is subject to the same regulations as any other motor vehicle driver. Drivers from all corners of the world live here where traffic laws can differ — always be alert.
@@ -194,7 +207,7 @@ Find CIMRA at: facebook.com/CIMRA` },
     ],
   },
   {
-    id: "before-ride", title: "Before You Ride", icon: "Settings", color: "#FBBF24",
+    id: "before-ride", title: "Before You Ride", icon: "Settings", color: "#A47A42",
     sections: [
       { title: "Preparation Checklist",
         content: `Your preparation before a trip determines whether you'll get there safely. Before taking off, always:
@@ -247,7 +260,7 @@ Find CIMRA at: facebook.com/CIMRA` },
     ],
   },
   {
-    id: "ride-abilities", title: "Ride Within Your Abilities", icon: "Gauge", color: "#34D399",
+    id: "ride-abilities", title: "Ride Within Your Abilities", icon: "Gauge", color: "#66735F",
     sections: [
       { title: "Body Position",
         content: `To control a motorcycle well:
@@ -312,7 +325,7 @@ Leader rides in the right side of the lane. Second rider stays 1 second behind i
     ],
   },
   {
-    id: "safe-practices", title: "Safe Riding Practices", icon: "Eye", color: "#818CF8",
+    id: "safe-practices", title: "Safe Riding Practices", icon: "Eye", color: "#6F7D85",
     sections: [
       { title: "S.E.E. — Search, Evaluate, Execute",
         content: `Good experienced riders use **S.E.E.** — a three-step process for making appropriate judgments in traffic:
@@ -354,7 +367,7 @@ Leader rides in the right side of the lane. Second rider stays 1 second behind i
     ],
   },
   {
-    id: "crash-avoidance", title: "Crash Avoidance", icon: "AlertTriangle", color: "#F87171",
+    id: "crash-avoidance", title: "Crash Avoidance", icon: "AlertTriangle", color: "#A1594A",
     sections: [
       { title: "Quick Stops",
         content: `To stop quickly, use **both brakes** simultaneously:
@@ -408,7 +421,7 @@ If braking while leaning in a curve: apply brakes lightly, reduce throttle. As y
     ],
   },
   {
-    id: "impaired", title: "Riding Impaired", icon: "AlertTriangle", color: "#EF4444",
+    id: "impaired", title: "Riding Impaired", icon: "AlertTriangle", color: "#7B4D46",
     sections: [
       { title: "Alcohol & Drugs",
         content: `Alcohol impairs balance, coordination, vision, and judgment — ALL essential for safe motorcycle operation — with as little as **one drink.**
@@ -443,7 +456,7 @@ If braking while leaning in a curve: apply brakes lightly, reduce throttle. As y
     ],
   },
   {
-    id: "emergency", title: "When Bad Things Happen", icon: "Heart", color: "#F43F5E",
+    id: "emergency", title: "When Bad Things Happen", icon: "Heart", color: "#8B5D55",
     sections: [
       { title: "At a Crash Scene",
         content: `**Secure the Scene:**
@@ -469,7 +482,7 @@ If braking while leaning in a curve: apply brakes lightly, reduce throttle. As y
     ],
   },
   {
-    id: "practical", title: "Practical Skills & Testing", icon: "Target", color: "#10B981",
+    id: "practical", title: "Practical Skills & Testing", icon: "Target", color: "#6B705D",
     sections: [
       { title: "Riding Exercises",
         content: `**Key principles for all exercises:**
@@ -506,7 +519,7 @@ If braking while leaning in a curve: apply brakes lightly, reduce throttle. As y
     ],
   },
   {
-    id: "resources", title: "Resources", icon: "MapPin", color: "#7C3AED",
+    id: "resources", title: "Resources", icon: "MapPin", color: "#6B625A",
     sections: [
       { title: "Cayman Islands Government Agencies",
         content: `**Department of Vehicle & Drivers' Licensing**
@@ -539,6 +552,29 @@ function useAnimKey(dep) {
   const [key, setKey] = useState(0);
   useEffect(() => { setKey(k => k + 1); }, [dep]);
   return key;
+}
+
+function shuffleArray(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function randomizeQuestion(question) {
+  if (!question?.options) return question;
+
+  const shuffledOptions = shuffleArray(
+    question.options.map((option, index) => ({ option, index }))
+  );
+
+  return {
+    ...question,
+    options: shuffledOptions.map(item => item.option),
+    correct: shuffledOptions.findIndex(item => item.index === question.correct),
+  };
 }
 
 // ─── PROGRESS RING ────────────────────────────────────────────────────
@@ -577,8 +613,8 @@ function ContentRenderer({ text }) {
       const cnt = t.slice(1).trim();
       els.push(
         <div key={k++} style={{ display: "flex", gap: 10, marginBottom: 7, paddingLeft: 2 }}>
-          <span style={{ color: C.sky, flexShrink: 0, marginTop: 3, fontSize: 10 }}>◆</span>
-          <span style={{ color: "#B0BCDC", fontSize: 14, lineHeight: 1.65 }}
+          <span style={{ color: C.gold, flexShrink: 0, marginTop: 3, fontSize: 10 }}>◆</span>
+          <span style={{ color: "#C8BFB2", fontSize: 14, lineHeight: 1.65 }}
             dangerouslySetInnerHTML={{ __html: cnt.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${C.text}">$1</strong>`) }} />
         </div>
       );
@@ -589,15 +625,15 @@ function ContentRenderer({ text }) {
       const cnt = t.slice(nm[0].length);
       els.push(
         <div key={k++} style={{ display: "flex", gap: 10, marginBottom: 7, paddingLeft: 2 }}>
-          <span style={{ color: C.sky, fontWeight: 800, flexShrink: 0, minWidth: 18, fontSize: 13 }}>{nm[1]}.</span>
-          <span style={{ color: "#B0BCDC", fontSize: 14, lineHeight: 1.65 }}
+          <span style={{ color: C.gold, fontWeight: 800, flexShrink: 0, minWidth: 18, fontSize: 13 }}>{nm[1]}.</span>
+          <span style={{ color: "#C8BFB2", fontSize: 14, lineHeight: 1.65 }}
             dangerouslySetInnerHTML={{ __html: cnt.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${C.text}">$1</strong>`) }} />
         </div>
       );
       continue;
     }
     els.push(
-      <p key={k++} style={{ color: "#B0BCDC", fontSize: 14, lineHeight: 1.65, marginBottom: 6 }}
+      <p key={k++} style={{ color: "#C8BFB2", fontSize: 14, lineHeight: 1.65, marginBottom: 6 }}
         dangerouslySetInnerHTML={{ __html: t.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${C.text}">$1</strong>`) }} />
     );
   }
@@ -606,6 +642,7 @@ function ContentRenderer({ text }) {
 
 // ─── QUIZ ─────────────────────────────────────────────────────────────
 function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
+  const [questions, setQuestions] = useState(() => shuffleArray(quiz.map(randomizeQuestion)));
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
   const [showResult, setShowResult] = useState(false);
@@ -616,7 +653,7 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
   const [bestStreak, setBestStreak] = useState(0);
   const [animKey, setAnimKey] = useState(0);
 
-  const q = quiz[current];
+  const q = questions[current];
   const color = chapterColor || C.sky;
 
   const handleSelect = (idx) => {
@@ -634,7 +671,7 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
   };
 
   const handleNext = () => {
-    if (current < quiz.length - 1) {
+    if (current < questions.length - 1) {
       setCurrent(c => c + 1);
       setSelected(null);
       setShowResult(false);
@@ -645,12 +682,13 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
   };
 
   const handleRetry = () => {
+    setQuestions(shuffleArray(quiz.map(randomizeQuestion)));
     setCurrent(0); setSelected(null); setShowResult(false);
     setScore(0); setAnswers([]); setFinished(false); setStreak(0); setBestStreak(0); setAnimKey(k => k + 1);
   };
 
   if (finished) {
-    const pct = Math.round((score / quiz.length) * 100);
+    const pct = Math.round((score / questions.length) * 100);
     const passed = pct >= 80;
     return (
       <div className="anim-scale-in" style={{ padding: "32px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
@@ -667,7 +705,7 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
         </div>
 
         <p style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "12px 0 4px" }}>
-          {score} / {quiz.length}
+          {score} / {questions.length}
         </p>
         {bestStreak > 1 && (
           <p className="anim-pop-in" style={{ color: C.amber, fontSize: 13, marginBottom: 4 }}>
@@ -694,7 +732,7 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
               Review Incorrect
             </p>
             {answers.filter(a => !a.isCorrect).map((a, i) => {
-              const orig = quiz.find(qq => qq.q === a.question);
+              const orig = questions.find(qq => qq.q === a.question);
               return (
                 <div key={i} style={{ background: C.card, borderRadius: 12, padding: 14, marginBottom: 10, borderLeft: `3px solid ${C.red}` }}>
                   <p style={{ color: C.text, fontSize: 13, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{a.question}</p>
@@ -711,18 +749,14 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
 
   return (
     <div style={{ padding: "20px 18px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <button onClick={onBack} style={ghostBtnStyle()}>
-          <ChevronLeft size={16} />
-        </button>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {streak >= 2 && (
             <span className="anim-pop-in" style={{ color: C.amber, fontSize: 13, fontWeight: 700 }}>
               🔥 {streak}
             </span>
           )}
-          <span style={{ color: C.dim, fontSize: 13 }}>{current + 1}/{quiz.length}</span>
+          <span style={{ color: C.dim, fontSize: 13 }}>{current + 1}/{questions.length}</span>
         </div>
       </div>
 
@@ -730,7 +764,7 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
       <div style={{ height: 3, background: C.border, borderRadius: 2, marginBottom: 28, overflow: "hidden" }}>
         <div style={{
           height: 3, background: `linear-gradient(90deg, ${color}, ${color}88)`,
-          borderRadius: 2, width: `${((current) / quiz.length) * 100}%`,
+          borderRadius: 2, width: `${((current) / questions.length) * 100}%`,
           transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)"
         }} />
       </div>
@@ -811,7 +845,7 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
           onTouchStart={e => { e.currentTarget.style.transform = "scale(0.97)"; }}
           onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; }}
         >
-          {current < quiz.length - 1 ? "Next Question →" : "See Results 🏆"}
+          {current < questions.length - 1 ? "Next Question →" : "See Results 🏆"}
         </button>
       )}
     </div>
@@ -825,11 +859,6 @@ function ChapterView({ chapter, onQuiz, onBack }) {
 
   return (
     <div className="anim-slide-in-right" style={{ padding: "20px 18px" }}>
-      {/* Back */}
-      <button onClick={onBack} style={{ ...ghostBtnStyle(), marginBottom: 20, display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: C.muted }}>
-        <ChevronLeft size={16} /> Chapters
-      </button>
-
       {/* Chapter header with photo */}
       <div style={{ marginBottom: 24, borderRadius: 18, overflow: "hidden", border: `1px solid ${chapter.color}33` }}>
         <div style={{
@@ -928,11 +957,11 @@ function ChapterView({ chapter, onQuiz, onBack }) {
 // ─── FULL PRACTICE TEST ────────────────────────────────────────────────
 function FullTestView({ onBack }) {
   const allQ = CHAPTERS.filter(c => c.quiz).flatMap(c => c.quiz.map(q => ({ ...q, chapter: c.title, color: c.color })));
-  const [shuffled] = useState(() => [...allQ].sort(() => Math.random() - 0.5).slice(0, 25));
+  const [shuffled] = useState(() => shuffleArray(allQ.map(randomizeQuestion)).slice(0, 25));
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [answers, setAnswers] = useState([]);
   const [finished, setFinished] = useState(false);
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
@@ -949,15 +978,30 @@ function FullTestView({ onBack }) {
   const secs = elapsed % 60;
 
   const handleSelect = (idx) => {
-    if (showResult) return;
+    if (selected !== null) return;
     setSelected(idx);
-    setShowResult(true);
-    if (idx === q.correct) setScore(s => s + 1);
+
+    const isCorrect = idx === q.correct;
+    setAnswers(prev => ([
+      ...prev,
+      {
+        question: q.q,
+        selected: idx,
+        correct: q.correct,
+        options: q.options,
+        explanation: q.explanation,
+        chapter: q.chapter,
+        isCorrect,
+      },
+    ]));
+
+    if (isCorrect) setScore(s => s + 1);
   };
 
   const handleNext = () => {
+    if (selected === null) return;
     if (current < shuffled.length - 1) {
-      setCurrent(c => c + 1); setSelected(null); setShowResult(false); setAnimKey(k => k + 1);
+      setCurrent(c => c + 1); setSelected(null); setAnimKey(k => k + 1);
     } else {
       setFinished(true);
     }
@@ -966,6 +1010,7 @@ function FullTestView({ onBack }) {
   if (finished) {
     const pct = Math.round((score / shuffled.length) * 100);
     const passed = pct >= 80;
+    const incorrectAnswers = answers.filter(a => !a.isCorrect);
     return (
       <div className="anim-scale-in" style={{ padding: "32px 20px", textAlign: "center" }}>
         <div style={{ fontSize: 56, animation: "heroFloat 3s ease-in-out infinite", marginBottom: 16 }}>
@@ -981,9 +1026,33 @@ function FullTestView({ onBack }) {
           <ProgressRing progress={pct} size={130} stroke={9} color={passed ? C.emerald : C.amber} />
         </div>
         <p style={{ fontSize: 24, fontWeight: 800, color: C.text, marginTop: 12 }}>{score} / {shuffled.length}</p>
-        <p style={{ color: C.muted, fontSize: 13, maxWidth: 280, margin: "10px auto 28px", lineHeight: 1.6 }}>
+        <p style={{ color: C.muted, fontSize: 13, maxWidth: 280, margin: "10px auto 20px", lineHeight: 1.6 }}>
           {passed ? "Outstanding! You're well prepared for the official written test." : "Review your weak chapters and try again. You need 80% to pass."}
         </p>
+
+        {incorrectAnswers.length > 0 && (
+          <div style={{ textAlign: "left", margin: "0 0 20px" }}>
+            <p style={{ color: C.text, fontSize: 13, fontWeight: 800, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Review Answers
+            </p>
+            {incorrectAnswers.map((item, idx) => (
+              <div key={`${item.question}-${idx}`}
+                style={{
+                  background: C.card,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 10,
+                }}>
+                <p style={{ color: C.text, fontSize: 13, fontWeight: 700, margin: "0 0 6px", lineHeight: 1.5 }}>{item.question}</p>
+                <p style={{ color: C.red, fontSize: 12, margin: "0 0 4px" }}>Your answer: {item.options[item.selected]}</p>
+                <p style={{ color: C.emerald, fontSize: 12, margin: "0 0 6px" }}>Correct answer: {item.options[item.correct]}</p>
+                <p style={{ color: C.muted, fontSize: 12, margin: 0, lineHeight: 1.5 }}>{item.explanation}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         <button onClick={onBack} style={{ ...btnStyle(C.border, C.border2, C.text, true), width: "100%", marginBottom: 10 }}>
           ← Back to Home
         </button>
@@ -993,8 +1062,7 @@ function FullTestView({ onBack }) {
 
   return (
     <div style={{ padding: "20px 18px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <button onClick={onBack} style={ghostBtnStyle()}><ChevronLeft size={16} /></button>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Clock size={13} color={C.dim} />
           <span style={{ color: C.dim, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
@@ -1023,58 +1091,46 @@ function FullTestView({ onBack }) {
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
           {q.options.map((opt, i) => {
-            let bg = C.card, border = C.border2, col = "#B0BCDC";
-            if (showResult) {
-              if (i === q.correct) { bg = "#052E16"; border = C.emerald; col = "#D1FAE5"; }
-              else if (i === selected) { bg = "#450A0A"; border = C.red; col = "#FEE2E2"; }
-            }
+            const isSelected = i === selected;
+            const bg = isSelected ? `${C.gold}18` : C.card;
+            const border = isSelected ? C.gold : C.border2;
+            const col = isSelected ? C.text : "#C8BFB2";
+
             return (
               <button key={i} onClick={() => handleSelect(i)}
                 style={{
                   padding: "13px 15px", background: bg, border: `2px solid ${border}`,
-                  borderRadius: 13, color: col, cursor: showResult ? "default" : "pointer",
+                  borderRadius: 13, color: col, cursor: selected !== null ? "default" : "pointer",
                   fontSize: 14, textAlign: "left", display: "flex", alignItems: "center", gap: 10,
                   transition: "all 0.22s", fontFamily: "inherit",
                 }}
-                onMouseDown={e => { if (!showResult) e.currentTarget.style.transform = "scale(0.97)"; }}
+                onMouseDown={e => { if (selected === null) e.currentTarget.style.transform = "scale(0.97)"; }}
                 onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
-                onTouchStart={e => { if (!showResult) e.currentTarget.style.transform = "scale(0.97)"; }}
+                onTouchStart={e => { if (selected === null) e.currentTarget.style.transform = "scale(0.97)"; }}
                 onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; }}
               >
                 <span style={{
                   width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center",
-                  justifyContent: "center", background: showResult && i === q.correct ? C.emerald
-                    : showResult && i === selected ? C.red : C.bg,
-                  fontSize: 11, fontWeight: 800, flexShrink: 0, color: showResult ? "#fff" : C.muted,
+                  justifyContent: "center", background: isSelected ? C.gold : C.bg,
+                  fontSize: 11, fontWeight: 800, flexShrink: 0, color: isSelected ? "#fff" : C.muted,
                 }}>
-                  {showResult && i === q.correct ? <Check size={12} /> : showResult && i === selected ? <X size={12} /> : String.fromCharCode(65 + i)}
+                  {String.fromCharCode(65 + i)}
                 </span>
                 {opt}
               </button>
             );
           })}
         </div>
-        {showResult && (
-          <div className="anim-slide-in-up"
-            style={{
-              marginTop: 14, padding: 14,
-              background: selected === q.correct ? "#041F10" : "#2D0808",
-              borderRadius: 12, borderLeft: `3px solid ${selected === q.correct ? C.emerald : C.red}`,
-              fontSize: 13, color: selected === q.correct ? "#A7F3D0" : "#FCA5A5", lineHeight: 1.6,
-            }}>
-            {selected === q.correct ? "✓ " : "✗ "}{q.explanation}
-          </div>
-        )}
       </div>
 
-      {showResult && (
+      {selected !== null && (
         <button className="anim-slide-in-up" onClick={handleNext}
           style={{
             marginTop: 18, width: "100%", padding: 16,
-            background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
-            border: "none", borderRadius: 14, color: "#fff", fontSize: 16,
+            background: `linear-gradient(135deg, ${C.gold}, ${C.goldL})`,
+            border: "none", borderRadius: 14, color: "#1A140F", fontSize: 16,
             fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
-            boxShadow: "0 8px 24px #7C3AED44",
+            boxShadow: "0 8px 24px rgba(175,139,82,0.28)",
           }}
           onMouseDown={e => { e.currentTarget.style.transform = "scale(0.97)"; }}
           onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -1192,30 +1248,29 @@ function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
     <div className="anim-fade-in" style={{ padding: "20px 18px" }}>
       {/* Hero */}
       <div style={{
-        backgroundColor: "#0a1422",
-        borderRadius: 22, padding: "28px 22px 24px", marginBottom: 22,
+        background: "radial-gradient(circle at top, rgba(209,177,122,0.10) 0%, rgba(29,26,23,0.98) 34%, #141210 100%)",
+        borderRadius: 26, padding: "30px 24px 26px", marginBottom: 22,
         position: "relative", overflow: "hidden",
+        border: `1px solid ${C.border}`,
+        boxShadow: "0 22px 54px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.03)",
       }}>
-        {/* Gold accent line */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C.gold}99, transparent)` }} />
-
         <div style={{ position: "relative" }}>
           <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
             <img src="/cimra-logo.jpg" alt="CIMRA" style={{ width: 130, height: 130, objectFit: "contain", animation: "heroFloat 4s ease-in-out infinite", filter: "drop-shadow(0 4px 18px rgba(0,0,0,0.8))", borderRadius: 12 }} />
           </div>
-          <h1 style={{ fontSize: 23, fontWeight: 800, color: C.text, margin: "0 0 4px", letterSpacing: -0.6, lineHeight: 1.2, textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: C.text, margin: "0 0 6px", letterSpacing: -0.5, lineHeight: 1.18, textShadow: "0 2px 12px rgba(0,0,0,0.75)", fontFamily: TITLE_FONT }}>
             Cayman Islands<br/>Motorcycle Rider Handbook
           </h1>
-          <p style={{ color: C.gold, fontSize: 12, margin: "0 0 20px", lineHeight: 1.5, fontWeight: 600, letterSpacing: 0.5 }}>
+          <p style={{ color: C.goldL, fontSize: 12, margin: "0 0 20px", lineHeight: 1.5, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>
             Cayman Custom Cycles × CIMRA
           </p>
 
           {/* Stats row */}
           <div style={{ display: "flex", gap: 0, background: C.bg, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
             {[
-              { n: CHAPTERS.length, l: "Chapters", c: C.sky },
-              { n: totalQ, l: "Questions", c: C.violet },
-              { n: `${passedChapters}/${totalQuizChapters}`, l: "Passed", c: C.emerald },
+              { n: CHAPTERS.length, l: "Chapters", c: C.goldL },
+              { n: totalQ, l: "Questions", c: C.muted },
+              { n: `${passedChapters}/${totalQuizChapters}`, l: "Passed", c: C.gold },
             ].map((s, i) => (
               <div key={i} style={{ flex: 1, padding: "12px 0", textAlign: "center", borderRight: i < 2 ? `1px solid ${C.border}` : "none" }}>
                 <p style={{ fontSize: 20, fontWeight: 800, color: s.c, margin: 0 }}>{s.n}</p>
@@ -1306,12 +1361,12 @@ function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
       <button onClick={onStartTest}
         style={{
           width: "100%", padding: "18px 20px",
-          background: "linear-gradient(135deg, #4C1D95, #2D1B69)",
-          border: `1px solid #7C3AED55`, borderRadius: 18,
-          color: "#fff", cursor: "pointer", fontFamily: "inherit",
+          background: "linear-gradient(135deg, #25201B, #171411)",
+          border: `1px solid ${C.gold}66`, borderRadius: 18,
+          color: C.text, cursor: "pointer", fontFamily: "inherit",
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          boxShadow: "0 8px 32px #7C3AED33",
-          transition: "transform 0.15s",
+          boxShadow: "0 12px 28px rgba(0,0,0,0.28)",
+          transition: "transform 0.15s, box-shadow 0.15s",
         }}
         onMouseDown={e => { e.currentTarget.style.transform = "scale(0.98)"; }}
         onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -1319,10 +1374,10 @@ function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
         onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; }}
       >
         <div style={{ textAlign: "left" }}>
-          <p style={{ fontSize: 16, fontWeight: 800, margin: 0, letterSpacing: -0.3 }}>Full Practice Test</p>
-          <p style={{ fontSize: 12, color: "#C4B5FD", margin: 0, marginTop: 2 }}>25 random questions · all chapters</p>
+          <p style={{ fontSize: 16, fontWeight: 800, margin: 0, letterSpacing: -0.3, fontFamily: TITLE_FONT }}>Full Practice Test</p>
+          <p style={{ fontSize: 12, color: C.muted, margin: 0, marginTop: 2 }}>25 random questions · all chapters</p>
         </div>
-        <Award size={28} color="#A78BFA" />
+        <Award size={28} color={C.goldL} />
       </button>
 
       <p style={{ color: C.border2, fontSize: 11, textAlign: "center", marginTop: 24, lineHeight: 1.5 }}>
@@ -1402,7 +1457,7 @@ function QRView() {
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    setUrl(getShareUrl());
+    setUrl(getShareUrl("/download.html"));
 
     const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     setIsStandalone(Boolean(standalone));
@@ -1446,9 +1501,9 @@ function QRView() {
   return (
     <div className="anim-slide-in-up" style={{ padding: "32px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
       <div style={{ fontSize: 36, marginBottom: 10, animation: "heroFloat 4s ease-in-out infinite" }}>📱</div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: -0.5 }}>Scan to Open on Mobile</h2>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: -0.5 }}>Scan to Download on Mobile</h2>
       <p style={{ color: C.muted, fontSize: 13, marginBottom: 28, lineHeight: 1.6, maxWidth: 260 }}>
-        Scan this QR code with your phone to open the handbook on any device on the same Wi-Fi network.
+        Scan this QR code with your phone to open the handbook download page on any device on the same Wi-Fi network.
       </p>
 
       {url ? (
@@ -1476,9 +1531,14 @@ function QRView() {
             display: "flex", alignItems: "center", gap: 10,
             marginBottom: 12, maxWidth: 320, width: "100%",
           }}>
-            <span style={{ color: C.sky, fontSize: 13, fontFamily: "monospace", flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {url}
-            </span>
+            <div style={{ flex: 1, textAlign: "left", overflow: "hidden" }}>
+              <p style={{ color: C.text, fontSize: 13, fontWeight: 700, margin: 0 }}>
+                CIMRA Handbook
+              </p>
+              <p style={{ color: C.dim, fontSize: 11, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {url}
+              </p>
+            </div>
             <button onClick={handleCopy}
               style={{
                 background: copied ? C.emerald : C.border2,
@@ -1491,6 +1551,20 @@ function QRView() {
               {copied ? "✓ Copied" : "Copy"}
             </button>
           </div>
+
+          <a href={url}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              width: "100%", maxWidth: 320, marginBottom: 18,
+              textDecoration: "none", textAlign: "center",
+              padding: "12px 14px", borderRadius: 12,
+              background: `linear-gradient(135deg, ${C.gold}, ${C.goldL})`,
+              color: "#04111F", fontWeight: 800, fontSize: 14,
+              boxShadow: "0 10px 24px rgba(201,168,76,0.28)",
+            }}>
+            Download for Offline Use
+          </a>
         </>
       ) : (
         <div style={{ width: 240, background: C.card, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, marginBottom: 24, padding: "18px 16px", textAlign: "center", lineHeight: 1.5, border: `1px solid ${C.border}` }}>
@@ -1510,8 +1584,8 @@ function QRView() {
                 style={{
                   width: "100%", border: "none", cursor: "pointer",
                   padding: "12px 0", borderRadius: 10,
-                  background: `linear-gradient(135deg, ${C.sky}, ${C.violet})`,
-                  color: "#fff", fontWeight: 800, fontSize: 14, fontFamily: "inherit",
+                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldL})`,
+                  color: "#1A140F", fontWeight: 800, fontSize: 14, fontFamily: "inherit",
                 }}>
                 Install to Home Screen
               </button>
@@ -1551,49 +1625,45 @@ function QRView() {
 }
 
 // ─── BOTTOM NAV ───────────────────────────────────────────────────────
-function BottomNav({ activeTab, onChange }) {
+function BottomNav({ activeTab, onChange, showBack = false, onBack }) {
   const tabs = [
+    ...(showBack ? [{ id: "back", Icon: ChevronLeft, label: "Back" }] : []),
     { id: "home",     Icon: Home,       label: "Home" },
     { id: "chapters", Icon: BookOpen,   label: "Study" },
     { id: "test",     Icon: Award,      label: "Test" },
     { id: "progress", Icon: TrendingUp, label: "Progress" },
-    { id: "scan",     Icon: QrCode,     label: "Scan" },
+    { id: "scan",     Icon: QrCode,     label: "Share" },
   ];
   return (
     <nav style={{
-      position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-      width: "100%", maxWidth: 430,
-      background: "#070D1ADD", backdropFilter: "blur(20px)",
-      borderTop: `1px solid ${C.border}`,
-      display: "flex", padding: "8px 0 calc(8px + env(safe-area-inset-bottom, 0px))",
+      position: "fixed", bottom: 10, left: "50%", transform: "translateX(-50%)",
+      width: "calc(100% - 16px)", maxWidth: 414,
+      background: "rgba(16,16,16,0.92)", backdropFilter: "blur(18px)",
+      border: `1px solid ${C.border}`,
+      borderRadius: 20,
+      display: "flex", padding: "8px 4px calc(8px + env(safe-area-inset-bottom, 0px))",
       zIndex: 100,
+      boxShadow: "0 20px 40px rgba(0,0,0,0.30)",
     }}>
       {tabs.map(({ id, Icon: Ic, label }) => {
-        const active = activeTab === id;
+        const active = id !== "back" && activeTab === id;
         return (
-          <button key={id} onClick={() => onChange(id)}
+          <button key={id} onClick={() => (id === "back" ? onBack?.() : onChange(id))}
             style={{
               flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-              gap: 3, background: "none", border: "none", cursor: "pointer",
-              padding: "4px 0", fontFamily: "inherit",
-              transition: "opacity 0.15s", position: "relative",
+              gap: 4, background: "none", border: "none", cursor: "pointer",
+              padding: "6px 0", fontFamily: "inherit", position: "relative",
             }}>
-            {active && (
-              <div style={{
-                position: "absolute", top: -1, left: "22%", right: "22%",
-                height: 2, borderRadius: 1,
-                background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)`,
-              }} />
-            )}
             <div style={{
-              width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
-              background: active ? `${C.gold}18` : "transparent",
-              transition: "background 0.2s, transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
-              transform: active ? "scale(1.1)" : "scale(1)",
+              width: 34, height: 34, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center",
+              background: active ? `linear-gradient(135deg, ${C.gold}22, ${C.gold}10)` : "transparent",
+              border: active ? `1px solid ${C.gold}44` : "1px solid transparent",
+              transition: "all 0.24s ease",
+              transform: active ? "translateY(-1px)" : "translateY(0)",
             }}>
-              <Ic size={18} color={active ? C.gold : C.dim} strokeWidth={active ? 2.5 : 2} />
+              <Ic size={18} color={active ? C.goldL : C.dim} strokeWidth={active ? 2.3 : 2} />
             </div>
-            <span style={{ fontSize: 10, color: active ? C.gold : C.dim, fontWeight: active ? 700 : 400, letterSpacing: 0.2 }}>
+            <span style={{ fontSize: 10, color: active ? C.text : C.dim, fontWeight: active ? 700 : 500, letterSpacing: 0.2 }}>
               {label}
             </span>
           </button>
@@ -1626,11 +1696,24 @@ function ghostBtnStyle() {
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────
 export default function App() {
-  const [tab, setTab] = useState("home");        // home | chapters | test | progress
+  const [tab, setTab] = useState("home");
   const [chapterIdx, setChapterIdx] = useState(null);
   const [inQuiz, setInQuiz] = useState(false);
-  const [quizScores, setQuizScores] = useState({});
+  const [quizScores, setQuizScores] = useState(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(window.localStorage.getItem("cayman-handbook-progress-v1") || "{}");
+    } catch {
+      return {};
+    }
+  });
   const prevTab = useRef("home");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cayman-handbook-progress-v1", JSON.stringify(quizScores));
+    }
+  }, [quizScores]);
 
   const handleTabChange = (t) => {
     if (t !== tab) { prevTab.current = tab; setTab(t); setChapterIdx(null); setInQuiz(false); }
@@ -1639,7 +1722,6 @@ export default function App() {
   const handleOpenChapter = (i) => {
     setChapterIdx(i);
     setInQuiz(false);
-    // switch to chapters tab context if from home
     if (tab === "home") setTab("chapters");
   };
 
@@ -1647,9 +1729,17 @@ export default function App() {
     setQuizScores(prev => ({ ...prev, [chId]: Math.max(prev[chId] || 0, score) }));
   };
 
+  const handleResetProgress = () => {
+    const confirmed = typeof window === "undefined" || window.confirm("Clear all saved quiz progress for testing?");
+    if (!confirmed) return;
+    setQuizScores({});
+    setChapterIdx(null);
+    setInQuiz(false);
+    setTab("home");
+  };
+
   const chapter = chapterIdx !== null ? CHAPTERS[chapterIdx] : null;
 
-  // Determine which main content panel to show
   const showChapterDetail = tab === "chapters" && chapter && !inQuiz;
   const showQuiz = tab === "chapters" && chapter && inQuiz;
   const showTest = tab === "test";
@@ -1657,123 +1747,83 @@ export default function App() {
   const showScan = tab === "scan";
   const showChaptersList = tab === "chapters" && !chapter;
   const showHome = tab === "home" && !chapter;
+  const showBottomBack = !showHome;
+
+  const handleBottomBack = () => {
+    if (showQuiz) {
+      setInQuiz(false);
+      return;
+    }
+    if (showChapterDetail) {
+      setChapterIdx(null);
+      return;
+    }
+    handleTabChange("home");
+  };
 
   return (
     <div style={{
-      background: C.bg, minHeight: "100dvh", maxWidth: 430,
+      background: "linear-gradient(180deg, #100F0D 0%, #171411 100%)", minHeight: "100dvh", maxWidth: 430,
       margin: "0 auto", position: "relative", overflowX: "hidden",
+      boxShadow: "0 24px 60px rgba(0,0,0,0.30)",
     }}>
-      {/* Status bar spacer */}
       <div style={{ height: "env(safe-area-inset-top, 0px)" }} />
 
-      {/* Header */}
-      <header style={{
-        background: `${C.bg}EE`, backdropFilter: "blur(20px)",
-        borderBottom: `1px solid ${C.border}`,
-        padding: "14px 18px 13px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "sticky", top: 0, zIndex: 50, flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {(showChapterDetail || showQuiz) ? (
-            <button onClick={() => { if (showQuiz) { setInQuiz(false); } else { setChapterIdx(null); } }}
-              style={{ ...ghostBtnStyle(), marginRight: 2 }}>
-              <ChevronLeft size={20} />
-            </button>
-          ) : null}
-          <div style={{
-            width: 32, height: 32, borderRadius: 9,
-            background: `linear-gradient(135deg, ${C.gold}, #8B6A20)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Bike size={18} color="#fff" />
-          </div>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 800, color: C.text, margin: 0, letterSpacing: -0.3, lineHeight: 1 }}>
-              {showChapterDetail ? chapter.title
-                : showQuiz ? `Quiz`
-                : showTest ? "Practice Test"
-                : showProgress ? "My Progress"
-                : showScan ? "Scan QR Code"
-                : showChaptersList ? "All Chapters"
-                : "Cayman Custom Cycles"}
-            </p>
-            <p style={{ fontSize: 10, color: C.dim, margin: 0 }}>
-              {showChapterDetail ? `${chapter.sections.length} sections` :
-               showQuiz ? chapter.title :
-               showScan ? "Open on your phone" :
-               "Motorcycle Handbook"}
-            </p>
-          </div>
-        </div>
-
-        {/* Chapter nav arrows */}
-        {showChapterDetail && (
-          <div style={{ display: "flex", gap: 6 }}>
-            {chapterIdx > 0 && (
-              <button onClick={() => { setChapterIdx(chapterIdx - 1); setInQuiz(false); }}
-                style={{ ...ghostBtnStyle(), background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 8px" }}>
-                <ChevronLeft size={15} />
-              </button>
-            )}
-            {chapterIdx < CHAPTERS.length - 1 && (
-              <button onClick={() => { setChapterIdx(chapterIdx + 1); setInQuiz(false); }}
-                style={{ ...ghostBtnStyle(), background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 8px" }}>
-                <ChevronRight size={15} />
-              </button>
-            )}
-          </div>
-        )}
-      </header>
-
-      {/* Scrollable content */}
       <main style={{
         overflowY: "auto",
-        paddingBottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
-        minHeight: "calc(100dvh - 62px)",
+        paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))",
+        minHeight: "100dvh",
       }}>
-        {showHome && (
-          <HomeView
-            quizScores={quizScores}
-            onOpenChapter={handleOpenChapter}
-            onStartTest={() => handleTabChange("test")}
-            onProgress={() => handleTabChange("progress")}
-          />
-        )}
-        {showChaptersList && (
-          <ChaptersListView quizScores={quizScores} onOpenChapter={handleOpenChapter} />
-        )}
-        {showChapterDetail && (
-          <ChapterView
-            key={`ch-${chapterIdx}`}
-            chapter={chapter}
-            onQuiz={() => setInQuiz(true)}
-            onBack={() => setChapterIdx(null)}
-          />
-        )}
-        {showQuiz && (
-          <QuizView
-            key={`quiz-${chapterIdx}`}
-            quiz={chapter.quiz}
-            chapterTitle={chapter.title}
-            chapterColor={chapter.color}
-            onBack={() => setInQuiz(false)}
-            onComplete={(score) => handleQuizComplete(chapter.id, score)}
-          />
-        )}
-        {showTest && (
-          <FullTestView key="fulltest" onBack={() => handleTabChange("home")} />
-        )}
-        {showProgress && (
-          <ProgressView quizScores={quizScores} />
-        )}
-        {showScan && (
-          <QRView />
-        )}
+        <div key={`${tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
+          {showHome && (
+            <HomeView
+              quizScores={quizScores}
+              onOpenChapter={handleOpenChapter}
+              onStartTest={() => handleTabChange("test")}
+              onProgress={() => handleTabChange("progress")}
+              onScan={() => handleTabChange("scan")}
+              onResetProgress={handleResetProgress}
+            />
+          )}
+          {showChaptersList && (
+            <ChaptersListView quizScores={quizScores} onOpenChapter={handleOpenChapter} />
+          )}
+          {showChapterDetail && (
+            <ChapterView
+              key={`ch-${chapterIdx}`}
+              chapter={chapter}
+              onQuiz={() => setInQuiz(true)}
+              onBack={() => setChapterIdx(null)}
+            />
+          )}
+          {showQuiz && (
+            <QuizView
+              key={`quiz-${chapterIdx}`}
+              quiz={chapter.quiz}
+              chapterTitle={chapter.title}
+              chapterColor={chapter.color}
+              onBack={() => setInQuiz(false)}
+              onComplete={(score) => handleQuizComplete(chapter.id, score)}
+            />
+          )}
+          {showTest && (
+            <FullTestView key="fulltest" onBack={() => handleTabChange("home")} />
+          )}
+          {showProgress && (
+            <ProgressView quizScores={quizScores} />
+          )}
+          {showScan && (
+            <QRView />
+          )}
+        </div>
       </main>
 
-      {/* Bottom Nav */}
-      <BottomNav activeTab={tab} onChange={handleTabChange} />
+      <BottomNav
+        activeTab={tab}
+        onChange={handleTabChange}
+        showBack={showBottomBack}
+        onBack={handleBottomBack}
+      />
     </div>
   );
 }
