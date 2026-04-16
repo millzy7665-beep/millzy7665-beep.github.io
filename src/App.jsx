@@ -85,8 +85,9 @@ function getShareUrl(path = "") {
   return `${baseUrl.replace(/\/$/, "")}${normalizedPath}`;
 }
 
-function createNavigationState(tab, chapterIdx, inQuiz) {
+function createNavigationState(showWelcome, tab, chapterIdx, inQuiz) {
   return {
+    showWelcome,
     tab,
     chapterIdx,
     inQuiz,
@@ -100,6 +101,7 @@ function normalizeNavigationState(state) {
   const normalizedChapterIdx = Number.isInteger(state.chapterIdx) ? state.chapterIdx : null;
 
   return {
+    showWelcome: Boolean(state.showWelcome),
     tab: normalizedTab,
     chapterIdx: normalizedChapterIdx,
     inQuiz: Boolean(state.inQuiz),
@@ -107,7 +109,8 @@ function normalizeNavigationState(state) {
 }
 
 function navigationStatesMatch(left, right) {
-  return left?.tab === right?.tab
+  return left?.showWelcome === right?.showWelcome
+    && left?.tab === right?.tab
     && left?.chapterIdx === right?.chapterIdx
     && left?.inQuiz === right?.inQuiz;
 }
@@ -1865,12 +1868,13 @@ export default function App() {
 
     if (historyState) {
       isApplyingHistory.current = true;
+      setShowWelcome(historyState.showWelcome);
       setTab(historyState.tab);
       setChapterIdx(historyState.chapterIdx);
       setInQuiz(historyState.inQuiz);
     } else {
       window.history.replaceState(
-        { appNavigation: createNavigationState("home", null, false) },
+        { appNavigation: createNavigationState(true, "home", null, false) },
         ""
       );
     }
@@ -1879,9 +1883,10 @@ export default function App() {
 
     const handlePopState = (event) => {
       const nextState = normalizeNavigationState(event.state?.appNavigation)
-        || createNavigationState("home", null, false);
+        || createNavigationState(true, "home", null, false);
 
       isApplyingHistory.current = true;
+      setShowWelcome(nextState.showWelcome);
       setTab(nextState.tab);
       setChapterIdx(nextState.chapterIdx);
       setInQuiz(nextState.inQuiz);
@@ -1894,7 +1899,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined" || !historyReady.current) return;
 
-    const nextState = createNavigationState(tab, chapterIdx, inQuiz);
+    const nextState = createNavigationState(showWelcome, tab, chapterIdx, inQuiz);
     const currentState = normalizeNavigationState(window.history.state?.appNavigation);
 
     if (navigationStatesMatch(currentState, nextState)) {
@@ -1909,7 +1914,7 @@ export default function App() {
     }
 
     window.history.pushState({ appNavigation: nextState }, "");
-  }, [tab, chapterIdx, inQuiz]);
+  }, [showWelcome, tab, chapterIdx, inQuiz]);
 
   const handleTabChange = (t) => {
     if (t !== tab) { prevTab.current = tab; setTab(t); setChapterIdx(null); setInQuiz(false); }
@@ -1928,6 +1933,9 @@ export default function App() {
     if (showChapterDetail) {
       setChapterIdx(null);
       return;
+    }
+    if (!showWelcome) {
+      setShowWelcome(true);
     }
   };
 
@@ -1952,14 +1960,15 @@ export default function App() {
 
   const chapter = chapterIdx !== null ? chapters[chapterIdx] : null;
 
+  const showWelcomeScreen = showWelcome;
   const showChapterDetail = tab === "chapters" && chapter && !inQuiz;
   const showQuiz = tab === "chapters" && chapter && inQuiz;
   const showTest = tab === "test";
   const showProgress = tab === "progress";
   const showScan = tab === "scan";
   const showChaptersList = tab === "chapters" && !chapter;
-  const showHome = tab === "home" && !chapter;
-  const showBottomBack = !showHome;
+  const showHome = !showWelcomeScreen && tab === "home" && !chapter;
+  const showBottomBack = !showWelcomeScreen && !showHome;
 
   return (
     <div style={{
@@ -1974,7 +1983,10 @@ export default function App() {
         paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))",
         minHeight: "100dvh",
       }}>
-        <div key={`${tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
+        <div key={`${showWelcomeScreen ? "welcome" : tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
+          {showWelcomeScreen && (
+            <WelcomeView onEnter={() => setShowWelcome(false)} />
+          )}
           {showHome && (
             <HomeView
               chapters={chapters}
@@ -2019,12 +2031,14 @@ export default function App() {
         </div>
       </main>
 
-      <BottomNav
-        activeTab={tab}
-        onChange={handleTabChange}
-        showBack={showBottomBack}
-        onBack={goBack}
-      />
+      {!showWelcomeScreen && (
+        <BottomNav
+          activeTab={tab}
+          onChange={handleTabChange}
+          showBack={showBottomBack}
+          onBack={goBack}
+        />
+      )}
     </div>
   );
 }
