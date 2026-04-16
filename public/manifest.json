@@ -1,8 +1,8 @@
 {
   "id": "/offline.html?source=pwa",
-  "name": "Cayman Motorcycle Rider Handbook",
-  "short_name": "CIMRA Handbook",
-  "description": "Interactive Motorcycle Rider Handbook by Cayman Custom Cycles × CIMRA",
+  "name": "CIMRA Cayman Islands Motorcycle Rider Handbook",
+  "short_name": "CIMRA Rider",
+  "description": "Official CIMRA motorcycle rider handbook in partnership with Cayman Custom Cycles.",
   "start_url": "/offline.html?source=pwa",
   "scope": "/",
   "display": "standalone",

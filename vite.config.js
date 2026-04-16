@@ -2,8 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import os from 'os'
+import { readFileSync } from 'fs'
 
 const useHttps = process.env.VITE_HTTPS === 'true'
+const secureShareUrl = process.env.SECURE_SHARE_URL || 'https://cimra-handbook.web.app'
+const appVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
 
 function getLocalIP() {
   const nets = os.networkInterfaces()
@@ -32,7 +35,8 @@ export default defineConfig({
     allowedHosts: true,
   },
   define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
     __LOCAL_IP__: JSON.stringify(getLocalIP()),
-    __SECURE_SHARE_URL__: JSON.stringify(process.env.SECURE_SHARE_URL || null),
+    __SECURE_SHARE_URL__: JSON.stringify(secureShareUrl),
   },
 })

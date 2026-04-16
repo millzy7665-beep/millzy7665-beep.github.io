@@ -22,6 +22,7 @@ ios/App/build/
 
 # Local environment files
 android/local.properties
+.firebase/
 
 # macOS
 .DS_Store

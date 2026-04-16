@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   BookOpen, Shield, AlertTriangle, ChevronRight, ChevronLeft,
   Award, Brain, Eye, Gauge, Heart, Target, MapPin, Settings,
@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./animations.css";
+import { subscribeToLiveHandbook } from "./liveHandbook";
 
 // Network IP injected by Vite define at build/serve time
-/* global __LOCAL_IP__, __SECURE_SHARE_URL__ */
+/* global __APP_VERSION__, __LOCAL_IP__, __SECURE_SHARE_URL__ */
+const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev";
 const NETWORK_IP = typeof __LOCAL_IP__ !== "undefined" ? __LOCAL_IP__ : null;
 const SECURE_SHARE_URL = typeof __SECURE_SHARE_URL__ !== "undefined" ? __SECURE_SHARE_URL__ : null;
+const LOGO_SRC = `/cimra-logo.jpg?v=${APP_VERSION}`;
 
 // ─── PALETTE ──────────────────────────────────────────────────────────
 const C = {
@@ -40,7 +43,7 @@ const _P = (id, w, h) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&h=${h}&q=80`;
 const PHOTOS = {
   hero:             _P("1558980394-4c7c9299fe96", 900, 480),
-  welcome:          _P("1558980394-4c7c9299fe96", 400, 200),
+  welcome:          _P("1558981033-0f0309284409", 400, 200),
   licensing:        _P("1558980664-2cd663cf8dde", 400, 200),
   rules:            _P("1558980394-4c7c9299fe96", 400, 200),
   "before-ride":    _P("1558980664-2cd663cf8dde", 400, 200),
@@ -80,6 +83,36 @@ function getShareUrl(path = "") {
   if (!path) return baseUrl;
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl.replace(/\/$/, "")}${normalizedPath}`;
+}
+
+function createNavigationState(showWelcome, tab, chapterIdx, inQuiz) {
+  return {
+    showWelcome,
+    tab,
+    chapterIdx,
+    inQuiz,
+  };
+}
+
+function normalizeNavigationState(state) {
+  if (!state || typeof state !== "object") return null;
+
+  const normalizedTab = typeof state.tab === "string" ? state.tab : "home";
+  const normalizedChapterIdx = Number.isInteger(state.chapterIdx) ? state.chapterIdx : null;
+
+  return {
+    showWelcome: Boolean(state.showWelcome),
+    tab: normalizedTab,
+    chapterIdx: normalizedChapterIdx,
+    inQuiz: Boolean(state.inQuiz),
+  };
+}
+
+function navigationStatesMatch(left, right) {
+  return left?.showWelcome === right?.showWelcome
+    && left?.tab === right?.tab
+    && left?.chapterIdx === right?.chapterIdx
+    && left?.inQuiz === right?.inQuiz;
 }
 
 // ─── DATA ─────────────────────────────────────────────────────────────
@@ -139,7 +172,7 @@ Find CIMRA at: facebook.com/CIMRA` },
       { q: "What is the minimum age to ride a motorcycle up to 125cc?", options: ["16 years old","17 years old","18 years old","21 years old"], correct: 1, explanation: "You must be at least 17 years old to ride a motorcycle with an engine capacity not exceeding 125cc." },
       { q: "What must a learner license holder display while riding?", options: ["'S' plates","'L' plates","'P' plates","No plates required"], correct: 1, explanation: "Learner license holders MUST display 'L' plates whilst riding." },
       { q: "Which license group covers motorcycles over 125cc?", options: ["Group 0","Group 1","Group 1A","Group 2"], correct: 2, explanation: "Group 1A covers motorcycles in excess of 125cc." },
-      { q: "What is a motorcycle by Cayman Islands law?", options: ["Any two-wheeled vehicle","Motor with displacement over 125cc on two wheels","Any motorized bicycle","A vehicle with a seat and motor"], correct: 1, explanation: "A motorcycle is defined as a motor vehicle powered by a motor with displacement of more than 125cc, having a seat/saddle, designed for not more than two wheels." },
+      { q: "What is a motorcycle by Cayman Islands law?", options: ["Any two-wheeled vehicle","Motor with displacement over 125cc on two wheels","Any two-wheeled motorized vehicle","A vehicle with a seat and motor"], correct: 2, explanation: "The Traffic Act (2026 Revision), section 2, defines a motorcycle as \"a vehicle, but not an invalid carriage, with three wheels or less, which is used for the transportation of people, and includes a motor scooter and moped, but does not include an all-terrain cycle.\"" },
     ],
   },
   {
@@ -149,7 +182,7 @@ Find CIMRA at: facebook.com/CIMRA` },
         content: `In the Cayman Islands, any person operating a motorcycle is subject to the same regulations as any other motor vehicle driver. Drivers from all corners of the world live here where traffic laws can differ — always be alert.
 
 **Key Rules:**
-• Minimum age **16** to operate any motor vehicle
+• Minimum age **17** to operate any motor vehicle
 • **Drive on the LEFT** side of the road (except one-way streets or overtaking)
 • Before making a right-hand turn, give right of way to all vehicles
 • Comply with all traffic signals and signs
@@ -178,7 +211,7 @@ Find CIMRA at: facebook.com/CIMRA` },
       { title: "Motorcycle-Specific Road Code",
         content: `• All motorcycles are entitled to **full use of a lane** — no car may deprive a motorcycle of its lane
 • Rider AND passenger must wear an **approved crash helmet** (DOT or ECE standards), securely fastened
-• A learner license holder must NOT carry a pillion passenger
+• A learner license holder may carry a pillion passenger if the passenger is fully licensed
 • Full license holders may carry **no more than one passenger**, seated facing forward on foot rests
 • A passenger should only be carried if the motorcycle is designed/manufactured for it
 • Motorcycles may ride **two abreast** in a single lane but NOT more than two
@@ -187,7 +220,7 @@ Find CIMRA at: facebook.com/CIMRA` },
 • **Keep both wheels on the ground at all times**` },
       { title: "Helmet & Equipment Requirements",
         content: `• Everyone MUST wear an approved motorcycle helmet (DOT or ECE)
-• You must wear eye protection: goggles, face shields, or eyeglasses (contact lenses are NOT acceptable)
+• You should always wear eye protection: goggles, face shields, or eyeglasses
 • Tinted devices shall not be used at night
 • No headsets, headphones or listening devices that interfere with hearing
 • Passenger motorcycles must have footrests and handholds
@@ -198,7 +231,7 @@ Find CIMRA at: facebook.com/CIMRA` },
     quiz: [
       { q: "Which side of the road do you drive on in the Cayman Islands?", options: ["Right side","Left side","Either side","Center"], correct: 1, explanation: "In Cayman, you must keep to the LEFT side of the road." },
       { q: "What direction should you travel around a roundabout?", options: ["Counter-clockwise","Clockwise","Either direction","Straight through"], correct: 1, explanation: "Always travel clockwise around a roundabout. Never turn right into one!" },
-      { q: "Can a learner license holder carry a pillion passenger?", options: ["Yes, with supervision","Yes, always","No, never","Only on highways"], correct: 2, explanation: "A learner license holder must NOT carry a pillion passenger." },
+      { q: "Can a learner license holder carry a pillion passenger?", options: ["Yes, with a fully licenced passenger","Yes, always","No, never","Only on highways"], correct: 0, explanation: "A learner license holder may carry a pillion passenger if that passenger is fully licenced." },
       { q: "How many motorcycles may ride abreast in a single lane?", options: ["One only","Two maximum","Three maximum","No limit"], correct: 1, explanation: "Motorcycles may operate two abreast in a single lane, but not more than two." },
       { q: "When is turning left on a red light allowed?", options: ["Never","After a full stop","Only with a green arrow","At any time"], correct: 1, explanation: "Turning left on a red light is allowed after coming to a full stop." },
       { q: "What is the speed limit in school zones?", options: ["10 mph","15 mph","20 mph","25 mph"], correct: 1, explanation: "15 mph speed limits have been set in dedicated school zones." },
@@ -278,7 +311,7 @@ Find CIMRA at: facebook.com/CIMRA` },
 • **Squeeze** the front brake lever — never grab
 • Press down on the rear brake
 
-**In a turn:** If possible, straighten the bike upright first, then brake. If you must brake while leaning, apply brakes lightly and reduce throttle.` },
+**In a turn:** If possible, straighten the bike upright first, then brake. Avoid using the front brake while in a turn position. If you must brake while leaning, apply brakes lightly and reduce throttle.` },
       { title: "Turning",
         content: `Riders often try to take curves too fast, ending up in another lane or overreacting and braking too hard.
 
@@ -287,14 +320,14 @@ Find CIMRA at: facebook.com/CIMRA` },
 • **LOOK** — Look through the turn to where you want to go. Turn your head, not shoulders.
 • **PRESS** — To lean the motorcycle, press on the handle-grip in the direction of the turn. Press left = lean left = go left.` },
       { title: "Following Distance & Lane Positions",
-        content: `**Maintain a minimum of 2 seconds** behind the vehicle ahead.
+        content: `**Maintain a minimum of 6 seconds** behind the vehicle ahead.
 
 **To gauge following distance:**
 1. Pick a marker on or near the road ahead
-2. When the vehicle ahead passes it, count: "one-thousand-one, one-thousand-two"
-3. If you reach the marker before "two," you're too close
+      2. When the vehicle ahead passes it, count: "one-thousand-one" through "one-thousand-six"
+      3. If you reach the marker before "six," you're too close
 
-**Increase to 3+ seconds when:**
+      **Increase to 10 seconds when:**
 • Pavement is slippery
 • You can't see through the vehicle ahead
 • Traffic is heavy
@@ -315,10 +348,10 @@ Find CIMRA at: facebook.com/CIMRA` },
 • Stay directly behind you — avoid unnecessary movement
 
 **Group Riding — Staggered Formation:**
-Leader rides in the right side of the lane. Second rider stays 1 second behind in the left side. This keeps the group close with safe distances. Pass one at a time. Single-file for curves, turning, and entering/leaving a highway.` },
+Leader rides in the right side of the lane. Second rider stays 2 seconds behind in the left side. This keeps the group close with safe distances. Pass one at a time. Single-file for curves, turning, and entering/leaving a highway.` },
     ],
     quiz: [
-      { q: "What is the minimum safe following distance?", options: ["1 second","2 seconds","3 seconds","5 seconds"], correct: 1, explanation: "Normally, a minimum of two seconds distance should be maintained behind the vehicle ahead." },
+  { q: "What is the minimum safe following distance?", options: ["2 seconds","4 seconds","6 seconds","10 seconds"], correct: 2, explanation: "Normally, a minimum of six seconds distance should be maintained behind the vehicle ahead." },
       { q: "How much of your total stopping power does the front brake provide?", options: ["About 25%","About 50%","At least 75%","100%"], correct: 2, explanation: "The front brake provides at least three-quarters (75%) of your total stopping power." },
       { q: "What does 'Press left' do to the motorcycle?", options: ["Turns right","Goes straight","Leans left / goes left","Stops"], correct: 2, explanation: "Press left = lean left = go left. This is called countersteering." },
       { q: "What formation is best for group riding on straight roads?", options: ["Side by side","Staggered formation","Single file","Random"], correct: 1, explanation: "Staggered formation is the best way to keep ranks close yet maintain adequate space cushion." },
@@ -355,7 +388,7 @@ Leader rides in the right side of the lane. Second rider stays 1 second behind i
         content: `At night, it's harder to see and be seen.
 
 • **Reduce speed** — ride slower than daytime, especially on unfamiliar roads
-• **Increase distance** — open up 3+ second following distance
+• **Increase distance** — open up 5+ second following distance
 • **Use the car ahead** — their headlights show the road better than your high beam
 • **Use your high beam** whenever not following or meeting a car
 • **Be flexible about lane position** — choose whatever portion helps you see, be seen, and maintain a space cushion` },
@@ -469,6 +502,7 @@ If braking while leaning in a curve: apply brakes lightly, reduce throttle. As y
 • **Breathing** — look, listen, and feel for breathing
 • **Circulation** — check for a pulse, look for severe bleeding
 • **Stabilize** — do NOT move someone with an injury unless they're in imminent danger
+• **Helmet removal** — do NOT remove a helmet unless it is life-threatening, such as when the rider is not breathing
 
 **A course in CPR and basic first aid is invaluable.**` },
       { title: "Insurance & Evading Officers",
@@ -955,8 +989,8 @@ function ChapterView({ chapter, onQuiz, onBack }) {
 }
 
 // ─── FULL PRACTICE TEST ────────────────────────────────────────────────
-function FullTestView({ onBack }) {
-  const allQ = CHAPTERS.filter(c => c.quiz).flatMap(c => c.quiz.map(q => ({ ...q, chapter: c.title, color: c.color })));
+function FullTestView({ chapters, onBack }) {
+  const allQ = chapters.filter(c => c.quiz).flatMap(c => c.quiz.map(q => ({ ...q, chapter: c.title, color: c.color })));
   const [shuffled] = useState(() => shuffleArray(allQ.map(randomizeQuestion)).slice(0, 25));
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -1145,8 +1179,8 @@ function FullTestView({ onBack }) {
 }
 
 // ─── PROGRESS VIEW ────────────────────────────────────────────────────
-function ProgressView({ quizScores }) {
-  const topics = CHAPTERS.filter(c => c.quiz);
+function ProgressView({ chapters, quizScores }) {
+  const topics = chapters.filter(c => c.quiz);
   const totalQ = topics.reduce((s, c) => s + c.quiz.length, 0);
   const totalCorrect = Object.values(quizScores).reduce((s, v) => s + v, 0);
   const overallPct = totalQ > 0 ? Math.round((totalCorrect / totalQ) * 100) : 0;
@@ -1235,12 +1269,12 @@ function ProgressView({ quizScores }) {
 }
 
 // ─── HOME VIEW ────────────────────────────────────────────────────────
-function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
-  const totalQuizChapters = CHAPTERS.filter(c => c.quiz).length;
-  const passedChapters = CHAPTERS.filter(
+function HomeView({ chapters, onOpenChapter, onStartTest, onProgress, quizScores }) {
+  const totalQuizChapters = chapters.filter(c => c.quiz).length;
+  const passedChapters = chapters.filter(
     c => c.quiz && quizScores[c.id] && Math.round((quizScores[c.id] / c.quiz.length) * 100) >= 80
   ).length;
-  const totalQ = CHAPTERS.filter(c => c.quiz).reduce((s, c) => s + c.quiz.length, 0);
+  const totalQ = chapters.filter(c => c.quiz).reduce((s, c) => s + c.quiz.length, 0);
   const totalCorrect = Object.values(quizScores).reduce((s, v) => s + v, 0);
   const overallPct = totalQ > 0 ? Math.round((totalCorrect / totalQ) * 100) : 0;
 
@@ -1254,21 +1288,48 @@ function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
         border: `1px solid ${C.border}`,
         boxShadow: "0 22px 54px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.03)",
       }}>
+        <div style={{
+          position: "absolute",
+          top: 14,
+          right: 14,
+          padding: "4px 8px",
+          borderRadius: 999,
+          border: `1px solid ${C.border}`,
+          background: "rgba(0,0,0,0.32)",
+          color: C.goldL,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          lineHeight: 1,
+          zIndex: 2,
+        }}>
+          V. {APP_VERSION}
+        </div>
         <div style={{ position: "relative" }}>
-          <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
-            <img src="/cimra-logo.jpg" alt="CIMRA" style={{ width: 130, height: 130, objectFit: "contain", animation: "heroFloat 4s ease-in-out infinite", filter: "drop-shadow(0 4px 18px rgba(0,0,0,0.8))", borderRadius: 12 }} />
+          <div style={{ marginBottom: 18, display: "flex", justifyContent: "center" }}>
+            <img
+              src={LOGO_SRC}
+              alt="CIMRA"
+              style={{
+                width: 130,
+                height: 130,
+                objectFit: "contain",
+                filter: "drop-shadow(0 4px 18px rgba(0,0,0,0.8))",
+                borderRadius: 12,
+              }}
+            />
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: C.text, margin: "0 0 6px", letterSpacing: -0.5, lineHeight: 1.18, textShadow: "0 2px 12px rgba(0,0,0,0.75)", fontFamily: TITLE_FONT }}>
             Cayman Islands<br/>Motorcycle Rider Handbook
           </h1>
           <p style={{ color: C.goldL, fontSize: 12, margin: "0 0 20px", lineHeight: 1.5, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>
-            Cayman Custom Cycles × CIMRA
+            Official CIMRA rider handbook in partnership with Cayman Custom Cycles
           </p>
 
           {/* Stats row */}
           <div style={{ display: "flex", gap: 0, background: C.bg, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
             {[
-              { n: CHAPTERS.length, l: "Chapters", c: C.goldL },
+              { n: chapters.length, l: "Chapters", c: C.goldL },
               { n: totalQ, l: "Questions", c: C.muted },
               { n: `${passedChapters}/${totalQuizChapters}`, l: "Passed", c: C.gold },
             ].map((s, i) => (
@@ -1301,7 +1362,7 @@ function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
         Chapters
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-        {CHAPTERS.map((ch, i) => {
+        {chapters.map((ch, i) => {
           const Icon = ICON_MAP[ch.icon] || BookOpen;
           const hasPassed = ch.quiz && quizScores[ch.id] && Math.round((quizScores[ch.id] / ch.quiz.length) * 100) >= 80;
           return (
@@ -1388,14 +1449,112 @@ function HomeView({ onOpenChapter, onStartTest, onProgress, quizScores }) {
   );
 }
 
+// ─── WELCOME VIEW ─────────────────────────────────────────────────────
+function WelcomeView({ onEnter }) {
+  return (
+    <div className="anim-welcome-in" style={{ minHeight: "100dvh", padding: "28px 20px 40px", display: "flex", alignItems: "center" }}>
+      <div style={{
+        width: "100%",
+        background: "radial-gradient(circle at top, rgba(209,177,122,0.14) 0%, rgba(29,26,23,0.98) 36%, #141210 100%)",
+        borderRadius: 28,
+        padding: "34px 24px 28px",
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: "0 24px 56px rgba(0,0,0,0.32)",
+        textAlign: "center",
+      }}>
+        <div style={{
+          position: "absolute",
+          top: 14,
+          right: 14,
+          padding: "4px 8px",
+          borderRadius: 999,
+          border: `1px solid ${C.border}`,
+          background: "rgba(0,0,0,0.32)",
+          color: C.goldL,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          lineHeight: 1,
+          zIndex: 2,
+        }}>
+          V. {APP_VERSION}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <img
+            src={LOGO_SRC}
+            alt="CIMRA"
+            style={{
+              width: 148,
+              height: 148,
+              objectFit: "contain",
+              filter: "drop-shadow(0 6px 22px rgba(0,0,0,0.82))",
+              borderRadius: 14,
+            }}
+          />
+        </div>
+
+        <h1 style={{
+          fontSize: 28,
+          fontWeight: 700,
+          color: C.text,
+          margin: "0 0 8px",
+          letterSpacing: -0.6,
+          lineHeight: 1.14,
+          textShadow: "0 2px 12px rgba(0,0,0,0.75)",
+          fontFamily: TITLE_FONT,
+        }}>
+          Welcome to the<br />CIMRA Rider Handbook
+        </h1>
+
+        <p style={{ color: C.goldL, fontSize: 12, margin: "0 0 18px", lineHeight: 1.5, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>
+          Cayman Islands Motorcycle Rider Guide
+        </p>
+
+        <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 12px" }}>
+          This handbook brings together the key rules, riding principles, and practice questions to help riders prepare for safer riding and the written test.
+        </p>
+        <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 26px" }}>
+          Use it to study the chapters, check your progress, and open the offline version for quick access on your phone.
+        </p>
+
+        <button
+          onClick={onEnter}
+          style={{
+            width: "100%",
+            padding: "16px 18px",
+            background: `linear-gradient(135deg, ${C.gold}, ${C.goldL})`,
+            border: "none",
+            borderRadius: 16,
+            color: "#1A140F",
+            cursor: "pointer",
+            fontSize: 16,
+            fontWeight: 800,
+            fontFamily: "inherit",
+            boxShadow: "0 12px 28px rgba(175,139,82,0.28)",
+            transition: "transform 0.15s, box-shadow 0.15s",
+          }}
+          onMouseDown={e => { e.currentTarget.style.transform = "scale(0.98)"; }}
+          onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
+          onTouchStart={e => { e.currentTarget.style.transform = "scale(0.98)"; }}
+          onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; }}
+        >
+          Enter Handbook
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── CHAPTERS LIST ────────────────────────────────────────────────────
-function ChaptersListView({ onOpenChapter, quizScores }) {
+function ChaptersListView({ chapters, onOpenChapter, quizScores }) {
   return (
     <div className="anim-slide-in-up" style={{ padding: "24px 18px" }}>
       <h2 style={{ fontSize: 22, fontWeight: 800, color: C.text, marginBottom: 4, letterSpacing: -0.5 }}>Chapters</h2>
-      <p style={{ color: C.muted, fontSize: 13, marginBottom: 22 }}>Study all {CHAPTERS.length} chapters to prepare for your test</p>
+      <p style={{ color: C.muted, fontSize: 13, marginBottom: 22 }}>Study all {chapters.length} chapters to prepare for your test</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        {CHAPTERS.map((ch, i) => {
+        {chapters.map((ch, i) => {
           const Icon = ICON_MAP[ch.icon] || BookOpen;
           const hasPassed = ch.quiz && quizScores[ch.id] && Math.round((quizScores[ch.id] / ch.quiz.length) * 100) >= 80;
           const pct = ch.quiz && quizScores[ch.id] ? Math.round((quizScores[ch.id] / ch.quiz.length) * 100) : 0;
@@ -1696,6 +1855,8 @@ function ghostBtnStyle() {
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────
 export default function App() {
+  const [chapters, setChapters] = useState(CHAPTERS);
+  const [showWelcome, setShowWelcome] = useState(true);
   const [tab, setTab] = useState("home");
   const [chapterIdx, setChapterIdx] = useState(null);
   const [inQuiz, setInQuiz] = useState(false);
@@ -1708,6 +1869,8 @@ export default function App() {
     }
   });
   const prevTab = useRef("home");
+  const historyReady = useRef(false);
+  const isApplyingHistory = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1715,8 +1878,86 @@ export default function App() {
     }
   }, [quizScores]);
 
+  useEffect(() => {
+    return subscribeToLiveHandbook(CHAPTERS, setChapters);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const historyState = normalizeNavigationState(window.history.state?.appNavigation);
+
+    if (historyState) {
+      isApplyingHistory.current = true;
+      setShowWelcome(historyState.showWelcome);
+      setTab(historyState.tab);
+      setChapterIdx(historyState.chapterIdx);
+      setInQuiz(historyState.inQuiz);
+    } else {
+      window.history.replaceState(
+        { appNavigation: createNavigationState(true, "home", null, false) },
+        ""
+      );
+    }
+
+    historyReady.current = true;
+
+    const handlePopState = (event) => {
+      const nextState = normalizeNavigationState(event.state?.appNavigation)
+        || createNavigationState(true, "home", null, false);
+
+      isApplyingHistory.current = true;
+      setShowWelcome(nextState.showWelcome);
+      setTab(nextState.tab);
+      setChapterIdx(nextState.chapterIdx);
+      setInQuiz(nextState.inQuiz);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !historyReady.current) return;
+
+    const nextState = createNavigationState(showWelcome, tab, chapterIdx, inQuiz);
+    const currentState = normalizeNavigationState(window.history.state?.appNavigation);
+
+    if (navigationStatesMatch(currentState, nextState)) {
+      isApplyingHistory.current = false;
+      return;
+    }
+
+    if (isApplyingHistory.current) {
+      window.history.replaceState({ appNavigation: nextState }, "");
+      isApplyingHistory.current = false;
+      return;
+    }
+
+    window.history.pushState({ appNavigation: nextState }, "");
+  }, [showWelcome, tab, chapterIdx, inQuiz]);
+
   const handleTabChange = (t) => {
     if (t !== tab) { prevTab.current = tab; setTab(t); setChapterIdx(null); setInQuiz(false); }
+  };
+
+  const goBack = () => {
+    if (typeof window !== "undefined" && historyReady.current) {
+      window.history.back();
+      return;
+    }
+
+    if (showQuiz) {
+      setInQuiz(false);
+      return;
+    }
+    if (showChapterDetail) {
+      setChapterIdx(null);
+      return;
+    }
+    if (!showWelcome) {
+      setShowWelcome(true);
+    }
   };
 
   const handleOpenChapter = (i) => {
@@ -1738,28 +1979,17 @@ export default function App() {
     setTab("home");
   };
 
-  const chapter = chapterIdx !== null ? CHAPTERS[chapterIdx] : null;
+  const chapter = chapterIdx !== null ? chapters[chapterIdx] : null;
 
+  const showWelcomeScreen = showWelcome;
   const showChapterDetail = tab === "chapters" && chapter && !inQuiz;
   const showQuiz = tab === "chapters" && chapter && inQuiz;
   const showTest = tab === "test";
   const showProgress = tab === "progress";
   const showScan = tab === "scan";
   const showChaptersList = tab === "chapters" && !chapter;
-  const showHome = tab === "home" && !chapter;
-  const showBottomBack = !showHome;
-
-  const handleBottomBack = () => {
-    if (showQuiz) {
-      setInQuiz(false);
-      return;
-    }
-    if (showChapterDetail) {
-      setChapterIdx(null);
-      return;
-    }
-    handleTabChange("home");
-  };
+  const showHome = !showWelcomeScreen && tab === "home" && !chapter;
+  const showBottomBack = !showWelcomeScreen && !showHome;
 
   return (
     <div style={{
@@ -1774,9 +2004,13 @@ export default function App() {
         paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))",
         minHeight: "100dvh",
       }}>
-        <div key={`${tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
+        <div key={`${showWelcomeScreen ? "welcome" : tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
+          {showWelcomeScreen && (
+            <WelcomeView onEnter={() => setShowWelcome(false)} />
+          )}
           {showHome && (
             <HomeView
+              chapters={chapters}
               quizScores={quizScores}
               onOpenChapter={handleOpenChapter}
               onStartTest={() => handleTabChange("test")}
@@ -1786,14 +2020,14 @@ export default function App() {
             />
           )}
           {showChaptersList && (
-            <ChaptersListView quizScores={quizScores} onOpenChapter={handleOpenChapter} />
+            <ChaptersListView chapters={chapters} quizScores={quizScores} onOpenChapter={handleOpenChapter} />
           )}
           {showChapterDetail && (
             <ChapterView
               key={`ch-${chapterIdx}`}
               chapter={chapter}
               onQuiz={() => setInQuiz(true)}
-              onBack={() => setChapterIdx(null)}
+              onBack={goBack}
             />
           )}
           {showQuiz && (
@@ -1802,15 +2036,15 @@ export default function App() {
               quiz={chapter.quiz}
               chapterTitle={chapter.title}
               chapterColor={chapter.color}
-              onBack={() => setInQuiz(false)}
+              onBack={goBack}
               onComplete={(score) => handleQuizComplete(chapter.id, score)}
             />
           )}
           {showTest && (
-            <FullTestView key="fulltest" onBack={() => handleTabChange("home")} />
+            <FullTestView key="fulltest" chapters={chapters} onBack={goBack} />
           )}
           {showProgress && (
-            <ProgressView quizScores={quizScores} />
+            <ProgressView chapters={chapters} quizScores={quizScores} />
           )}
           {showScan && (
             <QRView />
@@ -1818,12 +2052,14 @@ export default function App() {
         </div>
       </main>
 
-      <BottomNav
-        activeTab={tab}
-        onChange={handleTabChange}
-        showBack={showBottomBack}
-        onBack={handleBottomBack}
-      />
+      {!showWelcomeScreen && (
+        <BottomNav
+          activeTab={tab}
+          onChange={handleTabChange}
+          showBack={showBottomBack}
+          onBack={goBack}
+        />
+      )}
     </div>
   );
 }
