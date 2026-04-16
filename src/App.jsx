@@ -85,9 +85,8 @@ function getShareUrl(path = "") {
   return `${baseUrl.replace(/\/$/, "")}${normalizedPath}`;
 }
 
-function createNavigationState(showWelcome, tab, chapterIdx, inQuiz) {
+function createNavigationState(tab, chapterIdx, inQuiz) {
   return {
-    showWelcome,
     tab,
     chapterIdx,
     inQuiz,
@@ -101,7 +100,6 @@ function normalizeNavigationState(state) {
   const normalizedChapterIdx = Number.isInteger(state.chapterIdx) ? state.chapterIdx : null;
 
   return {
-    showWelcome: Boolean(state.showWelcome),
     tab: normalizedTab,
     chapterIdx: normalizedChapterIdx,
     inQuiz: Boolean(state.inQuiz),
@@ -109,35 +107,13 @@ function normalizeNavigationState(state) {
 }
 
 function navigationStatesMatch(left, right) {
-  return left?.showWelcome === right?.showWelcome
-    && left?.tab === right?.tab
+  return left?.tab === right?.tab
     && left?.chapterIdx === right?.chapterIdx
     && left?.inQuiz === right?.inQuiz;
 }
 
 // ─── DATA ─────────────────────────────────────────────────────────────
 const CHAPTERS = [
-  {
-    id: "welcome", title: "Welcome", icon: "BookOpen", color: "#7F8C95",
-    sections: [
-      { title: "Cayman Custom Cycles Motorcycle Handbook",
-        content: `Welcome to your interactive Motorcycle Rider's Handbook, brought to you by **Cayman Custom Cycles** in partnership with the Cayman Islands Motorcycle Riders Association (CIMRA).
-
-The Cayman Islands offer a climate and weather favorable to motorcycle riders all year. For the safety of the motorcycle operator and those sharing the road with them, training and proper licensing is required by law.
-
-This handbook contains valuable information on techniques to operate a motorcycle safely. Strategies and techniques on managing the riding environment and avoiding crashes are presented along with an introduction to pertinent laws and the Rules of the Road.
-
-**Crash studies show that rider course graduates have far lower injury and fatality rates compared to untrained riders, clearly indicating the value of rider education.**
-
-Alcohol is a significant factor contributing to motorcycle related crashes — 42% of motorcycle riders who died in single-vehicle crashes had BAC levels of .08 or higher. Balance, coordination, vision, judgment — all essential skills needed for safe motorcycle operation can be negatively impacted by consumption of as little as one drink.` },
-      { title: "About CIMRA",
-        content: `The Cayman Islands Motorcycle Riding Association was organized on November 10, 2000. We are a positive, friendly group of riders — males and females, ages range from the early 20's and up, from all walks of life. We ride a variety of motorcycles including cruisers, touring, sport bikes and scooters.
-
-**Mission:** To create an Association where motorcyclists can enjoy the sport through shared activities and camaraderie. To promote motorcycle safety, project a positive image of motorcycling, promote motorcycling through community involvement and raise the general public's awareness of the sport.
-
-Find CIMRA at: facebook.com/CIMRA` },
-    ],
-  },
   {
     id: "licensing", title: "Licensing & Registration", icon: "FileText", color: "#8D806E",
     sections: [
@@ -631,110 +607,92 @@ function ProgressRing({ progress, size = 56, stroke = 5, color = C.emerald, labe
   );
 }
 
-// ─── CONTENT RENDERER ─────────────────────────────────────────────────
-function ContentRenderer({ text }) {
-  const lines = text.split("\n");
-  const els = [];
-  let k = 0;
-  for (const line of lines) {
-    const t = line.trim();
-    if (!t) { els.push(<div key={k++} style={{ height: 8 }} />); continue; }
-    if (t.startsWith("**") && t.endsWith("**") && t.split("**").length === 3) {
-      els.push(<p key={k++} style={{ color: C.text, fontWeight: 700, fontSize: 15, marginTop: 16, marginBottom: 6, letterSpacing: -0.2 }}>{t.replace(/\*\*/g, "")}</p>);
-      continue;
-    }
-    if (t.startsWith("•")) {
-      const cnt = t.slice(1).trim();
-      els.push(
-        <div key={k++} style={{ display: "flex", gap: 10, marginBottom: 7, paddingLeft: 2 }}>
-          <span style={{ color: C.gold, flexShrink: 0, marginTop: 3, fontSize: 10 }}>◆</span>
-          <span style={{ color: "#C8BFB2", fontSize: 14, lineHeight: 1.65 }}
-            dangerouslySetInnerHTML={{ __html: cnt.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${C.text}">$1</strong>`) }} />
-        </div>
-      );
-      continue;
-    }
-    const nm = t.match(/^(\d+)\.\s/);
-    if (nm) {
-      const cnt = t.slice(nm[0].length);
-      els.push(
-        <div key={k++} style={{ display: "flex", gap: 10, marginBottom: 7, paddingLeft: 2 }}>
-          <span style={{ color: C.gold, fontWeight: 800, flexShrink: 0, minWidth: 18, fontSize: 13 }}>{nm[1]}.</span>
-          <span style={{ color: "#C8BFB2", fontSize: 14, lineHeight: 1.65 }}
-            dangerouslySetInnerHTML={{ __html: cnt.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${C.text}">$1</strong>`) }} />
-        </div>
-      );
-      continue;
-    }
-    els.push(
-      <p key={k++} style={{ color: "#C8BFB2", fontSize: 14, lineHeight: 1.65, marginBottom: 6 }}
-        dangerouslySetInnerHTML={{ __html: t.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${C.text}">$1</strong>`) }} />
-    );
-  }
-  return <div>{els}</div>;
-}
-
-// ─── QUIZ ─────────────────────────────────────────────────────────────
 function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
-  const [questions, setQuestions] = useState(() => shuffleArray(quiz.map(randomizeQuestion)));
+  const color = chapterColor || C.gold;
+  const [questions] = useState(() => quiz.map(randomizeQuestion));
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [finished, setFinished] = useState(false);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-  const [animKey, setAnimKey] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const animKey = useAnimKey(current);
 
   const q = questions[current];
-  const color = chapterColor || C.sky;
 
-  const handleSelect = (idx) => {
+  const handleSelect = (index) => {
     if (showResult) return;
-    setSelected(idx);
+
+    setSelected(index);
     setShowResult(true);
-    const correct = idx === q.correct;
-    if (correct) {
-      setScore(s => s + 1);
-      setStreak(s => { const n = s + 1; if (n > bestStreak) setBestStreak(n); return n; });
+
+    const isCorrect = index === q.correct;
+    if (isCorrect) {
+      setScore((prev) => prev + 1);
+      setStreak((prev) => {
+        const next = prev + 1;
+        setBestStreak((best) => Math.max(best, next));
+        return next;
+      });
     } else {
       setStreak(0);
     }
-    setAnswers(a => [...a, { question: q.q, selected: idx, correct: q.correct, isCorrect: correct }]);
+
+    setAnswers((prev) => ([
+      ...prev,
+      {
+        question: q.q,
+        selected: index,
+        correct: q.correct,
+        isCorrect,
+        explanation: q.explanation,
+      },
+    ]));
   };
 
   const handleNext = () => {
+    if (!showResult) return;
+
     if (current < questions.length - 1) {
-      setCurrent(c => c + 1);
+      setCurrent((prev) => prev + 1);
       setSelected(null);
       setShowResult(false);
-      setAnimKey(k => k + 1);
-    } else {
-      setFinished(true);
+      return;
     }
+
+    setFinished(true);
   };
 
   const handleRetry = () => {
-    setQuestions(shuffleArray(quiz.map(randomizeQuestion)));
-    setCurrent(0); setSelected(null); setShowResult(false);
-    setScore(0); setAnswers([]); setFinished(false); setStreak(0); setBestStreak(0); setAnimKey(k => k + 1);
+    setCurrent(0);
+    setSelected(null);
+    setScore(0);
+    setAnswers([]);
+    setFinished(false);
+    setStreak(0);
+    setBestStreak(0);
+    setShowResult(false);
   };
 
   if (finished) {
     const pct = Math.round((score / questions.length) * 100);
     const passed = pct >= 80;
+
     return (
-      <div className="anim-scale-in" style={{ padding: "32px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        <div style={{ fontSize: 56, marginBottom: 16, animation: "heroFloat 3s ease-in-out infinite" }}>
-          {passed ? "🏆" : "📚"}
+      <div className="anim-scale-in" style={{ padding: "32px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 52, animation: "heroFloat 3s ease-in-out infinite", marginBottom: 12 }}>
+          {passed ? "🎓" : "📖"}
         </div>
+        <p style={{ color: color, fontSize: 12, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 8 }}>
+          {chapterTitle}
+        </p>
         <h2 style={{ fontSize: 26, fontWeight: 800, color: passed ? C.emerald : C.amber, marginBottom: 6, letterSpacing: -0.5 }}>
           {passed ? "Chapter Passed!" : "Keep Studying!"}
         </h2>
-        <p style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>{chapterTitle}</p>
 
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}>
           <ProgressRing progress={pct} size={120} stroke={8} color={passed ? C.emerald : C.amber} />
         </div>
 
@@ -760,18 +718,18 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
           </button>
         </div>
 
-        {answers.filter(a => !a.isCorrect).length > 0 && (
+        {answers.filter((answer) => !answer.isCorrect).length > 0 && (
           <div style={{ width: "100%", textAlign: "left" }} className="anim-slide-in-up">
             <p style={{ color: C.red, fontSize: 13, fontWeight: 700, marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>
               Review Incorrect
             </p>
-            {answers.filter(a => !a.isCorrect).map((a, i) => {
-              const orig = questions.find(qq => qq.q === a.question);
+            {answers.filter((answer) => !answer.isCorrect).map((answer, index) => {
+              const original = questions.find((question) => question.q === answer.question);
               return (
-                <div key={i} style={{ background: C.card, borderRadius: 12, padding: 14, marginBottom: 10, borderLeft: `3px solid ${C.red}` }}>
-                  <p style={{ color: C.text, fontSize: 13, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{a.question}</p>
-                  <p style={{ color: C.red, fontSize: 12 }}>✗ {orig?.options[a.selected]}</p>
-                  <p style={{ color: C.emerald, fontSize: 12, marginTop: 2 }}>✓ {orig?.options[a.correct]}</p>
+                <div key={index} style={{ background: C.card, borderRadius: 12, padding: 14, marginBottom: 10, borderLeft: `3px solid ${C.red}` }}>
+                  <p style={{ color: C.text, fontSize: 13, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{answer.question}</p>
+                  <p style={{ color: C.red, fontSize: 12 }}>✗ {original?.options[answer.selected]}</p>
+                  <p style={{ color: C.emerald, fontSize: 12, marginTop: 2 }}>✓ {original?.options[answer.correct]}</p>
                 </div>
               );
             })}
@@ -783,43 +741,62 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
 
   return (
     <div style={{ padding: "20px 18px" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 12 }}>
+        <div>
+          <p style={{ color: color, fontSize: 12, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", margin: 0 }}>
+            {chapterTitle}
+          </p>
+          <p style={{ color: C.dim, fontSize: 13, margin: "4px 0 0" }}>Question {current + 1} of {questions.length}</p>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {streak >= 2 && (
             <span className="anim-pop-in" style={{ color: C.amber, fontSize: 13, fontWeight: 700 }}>
               🔥 {streak}
             </span>
           )}
-          <span style={{ color: C.dim, fontSize: 13 }}>{current + 1}/{questions.length}</span>
         </div>
       </div>
 
-      {/* Progress track */}
       <div style={{ height: 3, background: C.border, borderRadius: 2, marginBottom: 28, overflow: "hidden" }}>
         <div style={{
           height: 3, background: `linear-gradient(90deg, ${color}, ${color}88)`,
-          borderRadius: 2, width: `${((current) / questions.length) * 100}%`,
-          transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)"
+          borderRadius: 2, width: `${(current / questions.length) * 100}%`,
+          transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)",
         }} />
       </div>
 
-      {/* Question */}
       <div key={animKey} className="anim-slide-in-up">
         <h3 style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 24, lineHeight: 1.5, letterSpacing: -0.3 }}>
           {q.q}
         </h3>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {q.options.map((opt, i) => {
-            let bg = C.card, border = C.border2, col = "#B0BCDC", icon = null;
+          {q.options.map((opt, index) => {
+            let bg = C.card;
+            let border = C.border2;
+            let col = "#B0BCDC";
+            let icon = null;
+
             if (showResult) {
-              if (i === q.correct) { bg = "#052E16"; border = C.emerald; col = "#D1FAE5"; icon = <Check size={14} />; }
-              else if (i === selected) { bg = "#450A0A"; border = C.red; col = "#FEE2E2"; icon = <X size={14} />; }
-            } else if (i === selected) {
-              bg = "#0A1F3F"; border = color; col = C.text;
+              if (index === q.correct) {
+                bg = "#052E16";
+                border = C.emerald;
+                col = "#D1FAE5";
+                icon = <Check size={14} />;
+              } else if (index === selected) {
+                bg = "#450A0A";
+                border = C.red;
+                col = "#FEE2E2";
+                icon = <X size={14} />;
+              }
+            } else if (index === selected) {
+              bg = "#0A1F3F";
+              border = color;
+              col = C.text;
             }
+
             return (
-              <button key={i} onClick={() => handleSelect(i)}
+              <button key={index} onClick={() => handleSelect(index)}
                 style={{
                   padding: "14px 16px", background: bg, border: `2px solid ${border}`,
                   borderRadius: 14, color: col, cursor: showResult ? "default" : "pointer",
@@ -827,7 +804,6 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
                   transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
                   transform: "scale(1)",
                   fontFamily: "inherit",
-                  animation: showResult && (i === q.correct || i === selected) ? (i === q.correct ? "fadeIn 0.3s ease" : "fadeIn 0.3s ease") : undefined,
                 }}
                 onMouseDown={e => { if (!showResult) e.currentTarget.style.transform = "scale(0.97)"; }}
                 onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -836,12 +812,12 @@ function QuizView({ quiz, chapterTitle, chapterColor, onBack, onComplete }) {
               >
                 <span style={{
                   width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center",
-                  justifyContent: "center", background: showResult && i === q.correct ? C.emerald
-                    : showResult && i === selected ? C.red : C.bg,
+                  justifyContent: "center", background: showResult && index === q.correct ? C.emerald
+                    : showResult && index === selected ? C.red : C.bg,
                   fontSize: 12, fontWeight: 800, flexShrink: 0, color: showResult ? "#fff" : C.muted,
                   transition: "all 0.25s",
                 }}>
-                  {icon || String.fromCharCode(65 + i)}
+                  {icon || String.fromCharCode(65 + index)}
                 </span>
                 {opt}
               </button>
@@ -1889,13 +1865,12 @@ export default function App() {
 
     if (historyState) {
       isApplyingHistory.current = true;
-      setShowWelcome(historyState.showWelcome);
       setTab(historyState.tab);
       setChapterIdx(historyState.chapterIdx);
       setInQuiz(historyState.inQuiz);
     } else {
       window.history.replaceState(
-        { appNavigation: createNavigationState(true, "home", null, false) },
+        { appNavigation: createNavigationState("home", null, false) },
         ""
       );
     }
@@ -1904,10 +1879,9 @@ export default function App() {
 
     const handlePopState = (event) => {
       const nextState = normalizeNavigationState(event.state?.appNavigation)
-        || createNavigationState(true, "home", null, false);
+        || createNavigationState("home", null, false);
 
       isApplyingHistory.current = true;
-      setShowWelcome(nextState.showWelcome);
       setTab(nextState.tab);
       setChapterIdx(nextState.chapterIdx);
       setInQuiz(nextState.inQuiz);
@@ -1920,7 +1894,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined" || !historyReady.current) return;
 
-    const nextState = createNavigationState(showWelcome, tab, chapterIdx, inQuiz);
+    const nextState = createNavigationState(tab, chapterIdx, inQuiz);
     const currentState = normalizeNavigationState(window.history.state?.appNavigation);
 
     if (navigationStatesMatch(currentState, nextState)) {
@@ -1935,7 +1909,7 @@ export default function App() {
     }
 
     window.history.pushState({ appNavigation: nextState }, "");
-  }, [showWelcome, tab, chapterIdx, inQuiz]);
+  }, [tab, chapterIdx, inQuiz]);
 
   const handleTabChange = (t) => {
     if (t !== tab) { prevTab.current = tab; setTab(t); setChapterIdx(null); setInQuiz(false); }
@@ -1954,9 +1928,6 @@ export default function App() {
     if (showChapterDetail) {
       setChapterIdx(null);
       return;
-    }
-    if (!showWelcome) {
-      setShowWelcome(true);
     }
   };
 
@@ -1981,15 +1952,14 @@ export default function App() {
 
   const chapter = chapterIdx !== null ? chapters[chapterIdx] : null;
 
-  const showWelcomeScreen = showWelcome;
   const showChapterDetail = tab === "chapters" && chapter && !inQuiz;
   const showQuiz = tab === "chapters" && chapter && inQuiz;
   const showTest = tab === "test";
   const showProgress = tab === "progress";
   const showScan = tab === "scan";
   const showChaptersList = tab === "chapters" && !chapter;
-  const showHome = !showWelcomeScreen && tab === "home" && !chapter;
-  const showBottomBack = !showWelcomeScreen && !showHome;
+  const showHome = tab === "home" && !chapter;
+  const showBottomBack = !showHome;
 
   return (
     <div style={{
@@ -2004,10 +1974,7 @@ export default function App() {
         paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))",
         minHeight: "100dvh",
       }}>
-        <div key={`${showWelcomeScreen ? "welcome" : tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
-          {showWelcomeScreen && (
-            <WelcomeView onEnter={() => setShowWelcome(false)} />
-          )}
+        <div key={`${tab}-${chapterIdx ?? "root"}-${inQuiz ? "quiz" : "view"}`} className="page-transition">
           {showHome && (
             <HomeView
               chapters={chapters}
@@ -2052,14 +2019,12 @@ export default function App() {
         </div>
       </main>
 
-      {!showWelcomeScreen && (
-        <BottomNav
-          activeTab={tab}
-          onChange={handleTabChange}
-          showBack={showBottomBack}
-          onBack={goBack}
-        />
-      )}
+      <BottomNav
+        activeTab={tab}
+        onChange={handleTabChange}
+        showBack={showBottomBack}
+        onBack={goBack}
+      />
     </div>
   );
 }
