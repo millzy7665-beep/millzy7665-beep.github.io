@@ -1,4 +1,4 @@
-const CACHE_NAME = "cimra-handbook-v19";
+const CACHE_NAME = "cimra-handbook-v21";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -8,6 +8,8 @@ const APP_SHELL = [
   "/cimra-logo.jpg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/icons/icon-192-maskable.png",
+  "/icons/icon-512-maskable.png",
 ];
 
 self.addEventListener("install", (event) => {
