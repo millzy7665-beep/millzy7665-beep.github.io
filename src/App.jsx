@@ -1568,7 +1568,7 @@ function ChapterView({ chapter, onQuiz, onBack }) {
 // ─── FULL PRACTICE TEST ────────────────────────────────────────────────
 function FullTestView({ chapters, onBack }) {
   const allQ = chapters.filter(c => c.quiz).flatMap(c => c.quiz.map(q => ({ ...q, chapter: c.title, color: c.color })));
-  const [shuffled] = useState(() => shuffleArray(allQ.map(randomizeQuestion)).slice(0, 25));
+  const [shuffled] = useState(() => shuffleArray(allQ.map(randomizeQuestion)).slice(0, 50));
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
@@ -2013,7 +2013,7 @@ function HomeView({ chapters, onOpenChapter, onStartTest, onProgress, quizScores
       >
         <div style={{ textAlign: "left" }}>
           <p style={{ fontSize: 16, fontWeight: 800, margin: 0, letterSpacing: -0.3, fontFamily: TITLE_FONT }}>Full Practice Test</p>
-          <p style={{ fontSize: 12, color: C.muted, margin: 0, marginTop: 2 }}>25 random questions · all chapters</p>
+          <p style={{ fontSize: 12, color: C.muted, margin: 0, marginTop: 2 }}>50 random questions · all chapters</p>
         </div>
         <Award size={28} color={C.goldL} />
       </button>
