@@ -27,7 +27,7 @@ if ('serviceWorker' in navigator) {
       return
     }
 
-    const registration = await navigator.serviceWorker.register('/sw.js').catch(() => null)
+    const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => null)
 
     if (!registration) {
       return

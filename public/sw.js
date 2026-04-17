@@ -1,4 +1,4 @@
-const CACHE_NAME = "cimra-handbook-v22";
+const CACHE_NAME = "cimra-handbook-v23";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -48,7 +48,7 @@ self.addEventListener("fetch", (event) => {
   if (!isSameOrigin) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(isNavigationRequest ? new Request(event.request.url, { cache: 'no-cache' }) : event.request)
       .then((response) => {
         if (response && response.status === 200) {
           const copy = response.clone();
