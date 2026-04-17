@@ -1,4 +1,4 @@
-const CACHE_NAME = "cimra-handbook-v21";
+const CACHE_NAME = "cimra-handbook-v22";
 const APP_SHELL = [
   "/",
   "/index.html",
